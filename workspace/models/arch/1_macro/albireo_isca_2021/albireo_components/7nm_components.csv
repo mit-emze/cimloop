@@ -1,0 +1,68 @@
+COMPONENT: albireo_tia
+technology,scaling,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,conservative,8,convert|read,0.6,2769,1,energy in pJ;  area in um^2
+7nm,conservative,8,write|update|leak,0,2769,1
+7nm,moderate,8,convert|read,0.3,2769,1,energy in pJ;  area in um^2
+7nm,moderate,8,write|update|leak,0,2769,1
+7nm,aggressive,8,convert|read,0.0375,2769,1,energy in pJ;  area in um^2
+7nm,aggressive,8,write|update|leak,0,2769,1
+
+COMPONENT: albireo_awg
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,8,compute|read,0,1108089,1,area in um^2; this is an energy-free component
+7nm,8,write|update|leak,0,1108089,1
+
+COMPONENT: dac_albireo
+technology,scaling,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,conservative,8,convert|read,5.2,153,1,energy in pJ;  area in um^2
+7nm,conservative,8,write|update|leak,0,153,1
+7nm,moderate,8,convert|read,2.6,153,1,energy in pJ;  area in um^2
+7nm,moderate,8,write|update|leak,0,153,1
+7nm,aggressive,8,convert|read,0.325,153,1,energy in pJ;  area in um^2
+7nm,aggressive,8,write|update|leak,0,153,1
+
+COMPONENT: albireo_mrr
+technology,scaling,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,conservative,8,compute|read|write|update,0,410,1,energy in pJ;
+7nm,conservative,8,leak,3.1e9,410,1
+7nm,moderate,8,compute|read|write|update,0,410,1,energy in pJ;
+7nm,moderate,8,leak,0.388e9,410,1
+7nm,aggressive,8,compute|read|write|update,0,410,1,energy in pJ;
+7nm,aggressive,8,leak,0.155e9,410,1
+
+COMPONENT: albireo_mzm
+technology,scaling,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,conservative,8,compute|read|write|update,0,15066,1,energy in pJ;
+7nm,conservative,8,leak,11.3e9,15066,1
+7nm,moderate,8,compute|read|write|update,0,15066,1,energy in pJ;
+7nm,moderate,8,leak,1.41e9,15066,1
+7nm,aggressive,8,compute|read|write|update,0,15066,1,energy in pJ;
+7nm,aggressive,8,leak,0.565e9,15066,1
+
+COMPONENT: albireo_sram
+technology,width,depth,action,energy,area,global_cycle_seconds,comment
+7nm,64,262144,read,0.435E+00,637952,1,energy in pJ;  area in um^2 (based on 256 kB of storage and a footprint of 0.0.59×0.34 mm^2)
+7nm,64,262144,write|update,0.435E+00,637952,1,
+7nm,64,262144,leak,0,637952,1,
+
+COMPONENT: albireo_star_coupler
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,8,compute|read,0,262500,1,area in um^2; this is an energy-free component
+7nm,8,write|update|leak,0,262500,1
+
+COMPONENT: albireo_laser
+technology,scaling,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,conservative,8,compute|read|write|update,0,6153,1,energy in pJ;
+7nm,conservative,8,leak,1.94e9,6153,1
+7nm,moderate,8,compute|read|write|update,0,6153,1,energy in pJ;
+7nm,moderate,8,leak,0.0713e9,6153,1
+7nm,aggressive,8,compute|read|write|update,0,6153,1,energy in pJ;
+7nm,aggressive,8,leak,0.0713e9,6153,1
+
+COMPONENT: albireo_photodiode
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+7nm,8,read|write|update|leak,0,9230,1
+
+
+reference: {'MRR': 996800.0, 'ADC': 498400.0, 'DAC': 37380.0, 'Cache': 249200.0, 'Photodiode': 249200.0, 'TIA': 124600.0, 'MZM': 4610200.0}
+model: {'MRR': 996300.0, 'ADC': 498746.679723, 'DAC': 37332.0, 'Cache': 78359.375, 'Photodiode': 0, 'TIA': 124605.0, 'MZM': 4610196.0}

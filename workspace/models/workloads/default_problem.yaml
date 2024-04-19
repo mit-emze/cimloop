@@ -1,0 +1,8 @@
+{{include_text('problem_base.yaml')}}
+
+problem:
+  <<<: *problem_base
+
+  name: "Base Problem"
+  dnn_name: "None"
+  notes: "None"

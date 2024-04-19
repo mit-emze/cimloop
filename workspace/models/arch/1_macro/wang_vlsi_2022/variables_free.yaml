@@ -1,0 +1,68 @@
+# These variables pertain to various design choices. They do not need to be
+# matched while comparing architectures.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  INPUT_BITS
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: offset_encode_hist
+  WEIGHT_ENCODING_FUNC: offset_encode_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  # DEFINITIONS:
+  # - Cell: Smallest structure capable of storing memory. Note that a cell may
+  #         store more than one bit. For example, a cell consisting of a RRAM
+  #         device may store >1 bits, while a cell consisting of an SRAM
+  #         bitcell may store only 1 bit. 
+  # - CiM Unit: Smallest structure capable of computing an analog MAC.
+  # - CiM Unit Width Cells: 
+  #     Number of CiM unit cells that are accessed as one. These cells receive
+  #     one analog input and compute one analog MAC per timestep.
+  # - CiM Unit Depth Cells: 
+  #     Number of independent groups of "CiM Unit Width" cells that form a CiM
+  #     unit. Each of these groups is indepently addressible and operates in
+  #     must be activated in a different timestep than the others.
+
+  CIM_UNIT_WIDTH_CELLS:  SUPPORTED_WEIGHT_BITS
+  CIM_UNIT_DEPTH_CELLS:  8
+  BITS_PER_CELL:         1
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  ADC_RESOLUTION: 8
+  VOLTAGE_DAC_RESOLUTION: 8
+  TEMPORAL_DAC_RESOLUTION: 1
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+  DAC_UNIT_RESISTANCE: 5000
+
+  N_ADC_PER_BANK: 16
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  BASE_LATENCY: 6.9e-9
+  LATENCY_COLUMNS_SCALE: DAC_UNIT_RESISTANCE / 5000 * ARRAY_BITLINES / 128
+  LATENCY_DAC_RESOLUTION_SCALE: VOLTAGE_DAC_RESOLUTION / 8
+  # Digital clock runs at 2x analog clock speed. Don't let analog clock go
+  # faster than that
+  NO_FASTER_THAN_DIGITAL: max(0.5, LATENCY_COLUMNS_SCALE * LATENCY_DAC_RESOLUTION_SCALE)
+  # Assume temporal DAC runs no faster than 0.05ns/step
+  LIMITED_BY_TEMPORAL_DAC: 0.05e-9 * (2 ** TEMPORAL_DAC_RESOLUTION - 1)
+  GLOBAL_CYCLE_SECONDS: max(BASE_LATENCY * NO_FASTER_THAN_DIGITAL * VOLTAGE_LATENCY_SCALE, LIMITED_BY_TEMPORAL_DAC, 2e-9)
+  READ_PULSE_WIDTH: GLOBAL_CYCLE_SECONDS

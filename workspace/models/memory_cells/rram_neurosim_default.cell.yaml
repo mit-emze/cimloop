@@ -1,0 +1,64 @@
+# -----------------------------------------------------------------------------
+# Device type and top-level parameters
+
+# Device type
+-MemCellType: RRAM  # SRAM or RRAM
+# -ReadMode: current  # Comment this line for voltage
+-DeviceRoadmap -1LP 1HP 2LSTP:  2
+
+# Device size
+-CellArea (F^2):  48
+-CellAspectRatio: 0.333 # Width/Height
+
+# Calibration parameters
+-CellReadLeakEnergyMultiplier: 1
+-CellWriteEnergyMultiplier: 1
+-CellCapacitanceMultiplier: 1
+-CellCapacitanceAdjust (F): 0 # Capacitance = (Nominal Capacitance) * Multiplier + Adjust
+
+# Used for RRAM with access transistors or SRAM
+-AccessCMOSWidth (F): 10
+
+# Affects NeuroSim-realized ADCs. NOTE: Most models use ADC plug-in ADCs and
+# this has little to no effect.
+-ReadMode: current # voltage or current
+
+# -----------------------------------------------------------------------------
+# SRAM-only parameters
+# SRAM configuration. Only used if MemCellType is SRAM
+-SRAMCellNMOSWidth (F): 2
+-SRAMCellPMOSWidth (F): 2
+-MinSenseVoltage (mV): 20
+
+# -----------------------------------------------------------------------------
+# RRAM-only parameters
+# RRAM configuration. Only used if MemCellType is RRAM
+-ResistanceOn (ohm): 6e3
+-ResistanceOff (ohm): 9e5
+
+# Set parameters
+-SetVoltage (V): 2
+-SetPulse (ns): 50
+# -SetCurrent (uA): 400 # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -SetEnergy (pJ): 8  # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -SetPower (uW): 800   # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+
+# Read parameters
+-ReadVoltage (V): 0.5
+-ReadPulse (ns): 2
+# -ReadCurrent (uA): 40 # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -ReadEnergy (pJ): 0.008  # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -ReadPower (uW): 8   # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+
+# Access transistor parameters
+-AccessType: CMOS   # CMOS or None
+-AccessTransistorResistance (ohm): 1.95e5
+-AccessVoltage (V): 1.1 # Access transistor voltage
+
+# -----------------------------------------------------------------------------
+# Other parameters that can be set via cell component attributes:
+
+# "voltage" is the global supply voltage
+# "threshold_voltage" is the global threshold voltage
+# "technology" is the technology node
+# "read_pulse_width" is the read pulse width

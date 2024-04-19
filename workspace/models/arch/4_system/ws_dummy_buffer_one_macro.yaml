@@ -1,0 +1,25 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: system
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # Dummy top-level buffer to hold input and output data
+    name: dummy_top
+    <<<: [*component_defaults]
+    attributes: {depth: INF, width: 1}
+    constraints:
+      dataspace: {keep_only: [Inputs, Outputs]}
+      temporal: 
+        factors: [P=-1, Q=-1, N=-1] # Weight-stationary
+        permutation: [X, Y, Z, Q, P, N, G, C, M, R, S] # Weight-stationary
+
+  - !Container # Have one macro in this system
+    name: macro_in_system
+    <<<: [*container_defaults]
+    spatial: {meshX: 1}
+    constraints: {spatial: {must_iterate_over_dataspaces: [Weights]}}

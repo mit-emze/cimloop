@@ -1,0 +1,113 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # Wordline capacitance. Wordlines control the integrators.
+    name: wordline_cap
+    # Output processing stage because each neuron has one wordline and each
+    # neuron generates one output, so #WLs active = the number of outputs
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: capacitor
+    attributes: 
+      # Reported: 48fF drivers, 1.5fF/access transistor
+      # Additional 0.6fF/RRAM coupling cap between WLs
+      base_cap: ((1.5 + 0.6) * ARRAY_BITLINES + 48) * 1e-15
+      capacitance:       base_cap * (TECHNOLOGY / 130) ** 2
+      voltage:           VOLTAGE
+      width:             ENCODED_OUTPUT_BITS
+      # WLs is toggled once for each input bit so neurons integrate the new bit
+      energy_scale: ENCODED_INPUT_BITS
+      stacked: True # Area accounted for in the memory cells
+
+  - !Component # Wordline drivers ONLY FOR AREA. We do energy with wordline_cap.
+    name: wordline_drivers
+    <<<: [*dummy]
+    subclass: input_row_drivers
+    attributes: 
+      width:                ENCODED_OUTPUT_BITS
+      rows:                 ARRAY_BITLINES # TRANSPOSED
+      cols:                 ARRAY_WORDLINES # TRANSPOSED
+      average_input_value:  1
+      <<: *cim_component_attributes
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: {width: DAC_RESOLUTION, <<: *cim_component_attributes}
+
+  - !Component # Weight drivers write weights
+    name: weight_drivers
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: weight_row_drivers
+    attributes: {width: ARRAY_BITLINES, <<: *cim_component_attributes}
+    area_scale: 0 # Input & weight drivers are shared. Separate weight drivers
+    # are just for energy calculations.
+
+  - !ArrayContainer # Each column stores a different weight slice. Columns share inputs.
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: ARRAY_COLS}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column.get_fanout()))]}}
+
+  - !Component # Each column gets one ADC and Shift+Add
+    name: shift_add
+    <<<: [*component_defaults, *keep_outputs, *no_temporal_reuse]
+    subclass: wan_shift_add
+    attributes: 
+      width: ENCODED_OUTPUT_BITS
+      n_steps: ADC_STEPS_PER_INPUT
+    constraints: {temporal: {no_reuse: ['*']}}
+
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: wan_variable_precision_adc
+    attributes: {<<<: *cim_component_attributes, n_steps: ADC_STEPS_PER_INPUT}
+  - !Component # Charge integrator
+    name: integrator
+    <<<: [*component_defaults, *keep_outputs, *no_temporal_reuse]
+    subclass: wan_analog_integrator
+    attributes: 
+      <<<: *cim_component_attributes
+      width: ENCODED_OUTPUT_BITS
+      n_steps: INTEGRATION_STEPS
+      # The n_steps already accounts for the energy of multiple input bits, 
+      # so we scale it back down here.
+      energy_scale: 1 / ENCODED_INPUT_BITS
+    constraints: {temporal: {factors_only: [X=0]}}
+
+  - !Component # Column drivers
+    name: column_drivers
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: column_drivers
+    # We divide n_instances by the number of columns because the drivers are shared
+    # between all columns.
+    attributes: {<<<: *cim_component_attributes, n_instances: 1/column.get_fanout()}
+
+  - !Component # Sample 1x per input bit
+    name: sample
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: wan_analog_sample
+    attributes: 
+      <<<: *cim_component_attributes
+      width: ENCODED_OUTPUT_BITS
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: ARRAY_ROWS}
+    constraints: {spatial: {maximize_dims: [C, R, S]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

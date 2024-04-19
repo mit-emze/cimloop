@@ -1,0 +1,127 @@
+# This file will be converted into a YAML file by Jinja2 templating.
+# It will include variables and macros from the listed directory.
+
+# THE FOLLOWING JINJA VARIABLES MUST BE SET:
+# - macro: The directory containing the macro to be included
+# - iso:   The directory containing the variables to be held constant
+#          across different macros being compared, e.g., technology node.
+# - top_dir:   The top-level directory. Must have a /architectures and
+#              /include subdirectory
+
+# ============================================================================
+# Paths where we can find other files
+# ============================================================================
+{{add_to_path(cwd())}}
+{{add_to_path(cwd() ~ '/include/')}}
+{{add_to_path(cwd() ~ '/memory_cells')}}
+
+# ============================================================================
+# Globals Key
+# ============================================================================
+globals:
+  version: 0.4
+
+  environment_variables:
+    TIMELOOP_OUTPUT_STAT_SCIENTIFIC: 1
+    TIMELOOP_OUTPUT_STAT_DEFAULT_FLOAT: 0
+    TIMELOOP_HIDE_INCONSEQUENTIAL_STATS: 0
+    # TIMELOOP_USE_ISL: 1
+
+  # Custom functions for Accelergy to use when parsing expressions
+  expression_custom_functions:
+    - slicing_encoding.py
+
+  accelergy_plug_ins:
+  - {{find_path('components/accelergy_plug_ins')}}
+
+# ============================================================================
+# Architecture specification
+# ============================================================================
+architecture:
+  version: 0.4
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  # Except for macro, each of the following  are included iff they are defined
+  # and not 'none'. macro must be defined.
+  # By default, set system to ws_dummy_buffer_one_macro
+  {% if system is defined and system and system != 'none' %}
+  - !Hierarchical 
+    nodes: {{include('arch/4_system/' ~ system ~ '.yaml', 'architecture.nodes')}}
+  {% endif %}
+
+  {% if chip is defined and chip and chip != 'none' %}
+  - !Hierarchical
+    nodes: {{include('arch/3_chip/'   ~ chip ~ '.yaml', 'architecture.nodes')}}
+  {% endif %}
+  
+  {% if tile is defined and tile and tile != 'none' %}
+  - !Hierarchical
+    nodes: {{include('arch/2_tile/'   ~ tile ~ '.yaml', 'architecture.nodes')}}
+  {% endif %}
+  
+  - !Hierarchical
+    nodes: {{include('arch/1_macro/'  ~ macro ~ '/arch.yaml', 'architecture.nodes')}}
+
+# ============================================================================
+# Variables specification. Variables used are:
+# - iso:  The directory containing the variables to be held constant
+#         across different macros being compared, e.g., technology node.
+# - free: The directory containing the variables that are specific to the
+#         macro being considered.
+# - common: The directory containing the variables that are common to all
+#           macro models. Some helpful intermediates are defined here.
+# ============================================================================
+variables: 
+- {version: 0.4}         # REQUIRED version number
+- {{include('arch/1_macro/' ~ iso   ~ '/variables_iso.yaml', 'variables')}}
+- {{include('arch/1_macro/' ~ macro ~ '/variables_free.yaml', 'variables')}}
+- {{include('variables_common.yaml',       'variables')}}
+
+# ============================================================================
+# Workload specification
+# ============================================================================
+problem:
+{%if layer is defined%}
+  # If the DNN is defined, prepend the DNN name to the layer name
+  {%if dnn is defined%}
+    {% set layer = dnn ~ '/' ~ layer %}
+  {%endif%}
+  # If the path exists, use that. Otherwise, check the workloads directory
+  {%if path_exists(layer)%}
+    {{include(layer, 'problem')}}
+  {%else%}
+    {{include('workloads/' ~ layer ~ '.yaml', 'problem')}}
+  {%endif%}
+
+# If the layer is not defined, use the default_problem.yaml file in the workloads
+# directory
+{%else%}
+  {{include('workloads/default_problem.yaml', 'problem')}}
+{%endif%}
+
+# ============================================================================
+# Compound components to be used in the architecture
+# ============================================================================
+components:
+  version: 0.4
+  classes: 
+  - {{include_all('components/*.yaml', 'compound_components.classes')}}
+
+  {%if path_exists('arch/1_macro/' ~ macro ~ '/components.yaml')%}
+  - {{include('arch/1_macro/' ~ macro ~ '/components.yaml', 'compound_components.classes')}}
+  {%endif%}
+
+# ============================================================================
+# Mapper and mapspace specification
+# ============================================================================
+mapper:
+  {{include('mapper.yaml', 'mapper')}}
+mapspace:
+  {{include('mapper.yaml', 'mapspace')}}
+
+# ============================================================================
+# If the macro has anything else to include, include it here
+# ============================================================================
+{%if path_exists('arch/1_macro/' ~ macro ~ '/include_text_in_top.yaml')%}
+{{include_text('arch/1_macro/' ~ macro ~ '/include_text_in_top.yaml')}}
+{%endif%}

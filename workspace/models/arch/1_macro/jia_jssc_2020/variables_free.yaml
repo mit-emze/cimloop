@@ -1,0 +1,55 @@
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Specific to this architecture
+  # ===========================================================================
+  XNOR_ENCODE: 0 # For inputs. 1 = XNOR, 0 = 2's comp
+  ZERO_GATE_INPUTS: 1
+
+  N_ARRAY_ROW_COLUMN_GROUPS: 4
+  N_NON_FOLDED_COLUMNS: 64
+  N_FOLDED_COLUMNS: 3
+
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  INPUT_BITS + XNOR_ENCODE # xnor takes an extra bit
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: >
+    (zero_gated_xnor_encode_hist if ZERO_GATE_INPUTS else xnor_encode_hist)
+    if XNOR_ENCODE else offset_encode_if_signed_hist
+  WEIGHT_ENCODING_FUNC: offset_encode_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  CIM_UNIT_WIDTH_CELLS:  1
+  CIM_UNIT_DEPTH_CELLS:  1
+  BITS_PER_CELL:         1
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  ADC_RESOLUTION: 8
+  VOLTAGE_DAC_RESOLUTION: 1
+  TEMPORAL_DAC_RESOLUTION: 1
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+  N_ADC_PER_BANK: N_NON_FOLDED_COLUMNS * N_ARRAY_ROW_COLUMN_GROUPS
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  BASE_LATENCY: 25e-9 * 54 # ns per cycle
+  GLOBAL_CYCLE_SECONDS: max(BASE_LATENCY * VOLTAGE_LATENCY_SCALE, 2e-9)
+  READ_PULSE_WIDTH: GLOBAL_CYCLE_SECONDS

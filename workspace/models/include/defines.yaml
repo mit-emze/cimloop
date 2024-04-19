@@ -1,0 +1,201 @@
+helpful_macros_ignore:
+- &dataspaces [Inputs, Outputs, Weights]
+- &dimensions [N, P, Q, X, C, M, R, S, Y, Z, G]
+
+- &container_defaults
+  constraints:
+    spatial:
+      permutation: *dimensions # Spatial permutation usually doesn't matter. Lock them to shrink mapspace.
+      no_link_transfer: *dataspaces # No link transfers unless explicitly enabled
+      factors: [X=1] # Don't temporally iterate over input bits unless we specify it
+      split: 999     # Disable spatial XY by splitting at the max value. We're not using Timeloop's 2D model.
+    temporal:
+      no_iteration_over_dataspaces: [Weights] # Weight-stationary by default
+      rmw_first_update: ['*']
+
+- &component_defaults
+  class: dummy_storage
+  attributes: {datawidth: 1}
+  constraints:
+    temporal:
+      rmw_first_update: ['*'] # If this is not here, Timeloop skips the first read-modify-write with a "fill".
+
+- &component_first_rmw_is_just_write_defaults
+  <<<: *component_defaults
+  constraints:
+    temporal:
+      rmw_first_update: !nomerge ['*'] # !nomerge tells Accelergy to replace the list, not merge it
+
+- &temporal_reuse    {}
+- &no_temporal_reuse
+  constraints: {temporal:  {no_reuse: ["*"], factors_only: []}} # No reason to iterate if we can't reuse
+  attributes: {depth: INF} # Storage capacity generally doesn't matter if we are not using this as a storage
+- &no_coalesce       
+  constraints: {dataspace: {no_coalesce: ["*"]}, temporal: {factors_only: []}} # Implies no temporal reuse
+  attributes: {depth: INF} # Storage capacity generally doesn't matter if we are not using this as a storage
+
+- &spatial_reuse     {}
+- &no_spatial_reuse  {constraints: {spatial: {no_reuse : ["*"]}}}
+
+- &keep_inputs       {constraints: {dataspace: {keep_only: [Inputs]}}}
+- &keep_outputs      {constraints: {dataspace: {keep_only: [Outputs]}}}
+- &keep_weights      {constraints: {dataspace: {keep_only: [Weights]}}}
+- &keep_nothing      {constraints: {dataspace: {keep_only: []}}}
+
+- &spatial_must_reuse_outputs {constraints: {spatial: {no_reuse: [Inputs, Weights],  no_iteration_over_dataspaces: [Outputs]}}}
+- &spatial_must_reuse_inputs  {constraints: {spatial: {no_reuse: [Outputs, Weights], no_iteration_over_dataspaces: [Inputs]}}}
+- &spatial_must_reuse_weights {constraints: {spatial: {no_reuse: [Inputs, Outputs],  no_iteration_over_dataspaces: [Weights]}}}
+
+- &no_temporal_iteration
+  constraints:
+    temporal: {factors_only: [], permutation: *dimensions}
+
+- &dummy             {<<<: [*component_defaults, *no_temporal_iteration, *no_coalesce, *keep_nothing], attributes: {width: 1, depth: 1, datawidth: 1}}
+
+- &spatial_map_all_weights
+  constraints:
+    spatial:
+      maximize_dims:
+      - [Y]    # Bits first
+      - [R, S] # Different values in the same filter
+      - [M, C] # Different filters
+      - [G]    # Different groups
+      - [P, Q] # Done mapping weights, let's parallelize output values
+      - [N]    # Different inputs in a batch
+      split: 999
+
+# =============================================================================
+# The following macros are used in CiM component attributes. They are
+# put under an `ignore` top-key so the front-end doesn't complain about
+# unknown attributes.
+# =============================================================================
+attribute_macros_ignore: # "ignore" to suppress unknown attribute errors
+  # These will be applied to analog array components
+  cim_component_attributes: &cim_component_attributes
+    # These are for NeuroSim
+    rows:                 ARRAY_WORDLINES
+    cols:                 ARRAY_BITLINES
+    cols_active_at_once:  ARRAY_PARALLEL_OUTPUTS
+    cell_config:          CELL_CONFIG
+    average_input_value:  AVERAGE_INPUT_VALUE
+    average_cell_value:   AVERAGE_WEIGHT_VALUE
+    cycle_seconds:        GLOBAL_CYCLE_SECONDS
+    voltage:              VOLTAGE
+    temporal_dac_bits:    TEMPORAL_DAC_RESOLUTION
+    read_pulse_width:     READ_PULSE_WIDTH
+    
+    # These are for the ADC plug-in. Set defaults for them
+    # so that if the user does not specify, we won't get
+    # an error.
+    resolution:       variables.get("ADC_RESOLUTION", 1)
+    n_adcs:           variables.get("N_ADC_PER_BANK", 1)
+    adc_energy_scale: variables.get("ADC_ENERGY_SCALE", 1)
+    adc_area_scale:   variables.get("ADC_AREA_SCALE", 1)
+    width:            ENCODED_OUTPUT_BITS
+
+  # These will be applied to the weight drivers
+  weight_drivers_attributes: &weight_drivers_attributes
+    <<: *cim_component_attributes
+    rows:                 ARRAY_WORDLINES
+    cols:                 ARRAY_BITLINES
+    cols_active_at_once:  ARRAY_PARALLEL_OUTPUTS
+    cell_config:          CELL_CONFIG
+    average_input_value:  AVERAGE_INPUT_VALUE
+    average_cell_value:   AVERAGE_WEIGHT_VALUE
+    cycle_seconds:        GLOBAL_CYCLE_SECONDS
+    voltage:              VOLTAGE
+    temporal_dac_bits:    TEMPORAL_DAC_RESOLUTION
+    sequential:           True
+    read_pulse_width:     0 # Irrelevant for weight programming
+
+  # These are common across many CiM components
+  cim_component_attributes_compound_component: &cim_component_attributes_compound_component
+    rows:                               "must_specify"
+    cols:                               "must_specify"
+    cols_active_at_once:                "must_specify"
+
+    technology:                         "must_specify"
+    cell_config:                        "must_specify"
+    average_input_value:                "must_specify"
+    average_cell_value:                 "must_specify"
+    cycle_seconds:                      "must_specify"
+    voltage_dac_bits:                   null # Optional
+    temporal_dac_bits:                  null
+    temporal_spiking:                   null
+    read_pulse_width:                   "must_specify"
+    voltage:                            "must_specify"
+    threshold_voltage:                  0
+    sequential:                         False
+    
+    # These are for the ADC plug-in
+    resolution: "must_specify"
+    n_adcs: "must_specify"
+    adc_energy_scale: 1
+    adc_area_scale: 1
+
+  # These are for use in a subcomponent of a CIM compound component
+  cim_component_attributes_compound_component_subcomponent: &cim_component_attributes_compound_component_subcomponent
+    rows: rows
+    cols: cols
+    cols_active_at_once: cols_active_at_once
+    cell_config: cell_config
+    average_input_value: average_input_value
+    average_cell_value: average_cell_value
+    cycle_seconds: cycle_seconds
+    voltage_dac_bits: voltage_dac_bits
+    temporal_dac_bits: temporal_dac_bits
+    temporal_spiking: temporal_spiking
+    read_pulse_width: read_pulse_width
+    voltage: voltage
+    threshold_voltage: threshold_voltage
+    sequential: sequential
+
+# =============================================================================
+# The following macros are used in the architecture file.
+# =============================================================================
+subcomponents_ignore:
+  # This is the bit MAC magic that is used to perform bitwise operations in
+  # Timeloop.
+  virtualized_mac: &virtualized_mac
+    # ===========================================================================
+    - !Container # bitwise_virtualization: Virtualize the bitwise MACs
+      # bitwise_virtualization: Virtualize the bitwise MACs to allow parallel
+      # execution of "bit" operations. This is done because each Timeloop MAC
+      # unit can only do one operation at a time, but when we split the bits
+      # we need many ops per MAC unit.
+      name: 1bit_x_1bit_mac
+      spatial: {meshX: N_VIRTUAL_MACS}
+      constraints:
+        spatial:
+          factors_only: 
+            - ("X=" + str(INPUT_BITS_PER_SLICE))
+            - ("Y=" + str(WEIGHT_BITS_PER_SLICE))
+            - Z=0 # 0 = All
+          permutation: *dimensions
+          split: 999
+    - !Component {name: here_to_fix_a_bug, <<<: *dummy}
+    - !Component {name: virtual_bitwise_mac, class: free_mac}
+
+  # This is the CiM unit that stores weights and computes MACs. Each CiM
+  # unit stores a different weight slice of up to CIM_UNIT_WIDTH_CELLS
+  # bits. It may also store up to CIM_UNIT_DEPTH_CELLS independently-addressable
+  # weight slices, but may only compute MACs on one slice at a time.  
+  cim_unit: &cim_unit
+    name: cim_unit
+    <<<: [*component_defaults]
+    subclass: cell
+    attributes:
+      <<: *cim_component_attributes
+      width:       WEIGHT_BITS_PER_SLICE # NOT width ; we want reads to count
+      depth:       CIM_UNIT_DEPTH_CELLS  # fully even if underutilized
+      width_cells: CIM_UNIT_WIDTH_CELLS
+      depth_cells: CIM_UNIT_DEPTH_CELLS
+    # Override default temporal: We CAN iterate over weights here
+    constraints: !nomerge
+      dataspace: {keep_only: [Weights]}
+      temporal:
+        permutation: [C, M]
+        no_iteration_over_dataspaces: [] # Override default
+        maximize_dims_capacity: attributes.depth
+        maximize_dims: [C, M]
+        factors: [P=1, Q=1, R=1, S=1, N=1, X=1]

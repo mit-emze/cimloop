@@ -1,0 +1,29 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: chip
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # DRAM main memory
+    name: glb
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes: 
+      width: 256
+      depth: 1024 * 1024 * 8 * 8 // width # 8MB
+    constraints: 
+      dataspace: {keep_only: [Inputs, Outputs]}
+      temporal:
+        factors: [Q=0, X=1, Y=1]
+        no_iteration_over_dataspaces: []
+        must_iterate_over_dataspaces: [Inputs, Outputs]
+
+  - !Container # Tile
+    name: tile_in_chip # long name so it doesn't conflict with other names
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 16}

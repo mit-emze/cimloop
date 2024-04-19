@@ -1,0 +1,38 @@
+# These variables pertain to the workload, microarch, and circuits. They should
+# be matched between architectures when comparing for a fair comparison.
+# Furthermore, this file should follow the same format for all architectures
+# such that we can mix and match architectures with different iso files.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Workload, microarch, circuits. Things that should be matched
+  # between architectures when comparing.
+  # ===========================================================================
+  ## Workload -----------------------------------------------------------------
+  WEIGHT_BITS: 8
+  INPUT_BITS:  8
+  OUTPUT_BITS: 8
+  BATCH_SIZE:  1
+
+  # Set by CiM processor if these values are available in the workload.
+  # Otherwise, use the defaults here.
+  INPUTS_HIST: ([1] * 15) # Uniform distribution
+  WEIGHTS_HIST: ([1] * 15) # Uniform distribution
+  OUTPUTS_HIST: INPUTS_HIST
+
+  ## Microarch ----------------------------------------------------------------
+  SUPPORTED_INPUT_BITS:  8       # Maximum input bits supported by the arch.
+  SUPPORTED_WEIGHT_BITS: 8       # Maximum weight bits supported by the arch.
+  SUPPORTED_OUTPUT_BITS: 8       # Maximum output bits supported by the arch.
+
+  # Circuits ------------------------------------------------------------------
+  VOLTAGE: 1
+  TECHNOLOGY: 22 # nm
+  CELL_CONFIG: "{{find_path('sram_wang_vlsi_2022.cell.yaml')}}"
+  VOLTAGE_ENERGY_SCALE: (VOLTAGE / 1) ** 2
+  VOLTAGE_LATENCY_SCALE: (0.7 / VOLTAGE) ** 1.1
+
+  # Calibration ---------------------------------------------------------------
+  ADC_ENERGY_SCALE: 3.15 * VOLTAGE_ENERGY_SCALE
+  ADC_AREA_SCALE: 0.4
+  ROW_COL_DRIVERS_AREA_SCALE: 1

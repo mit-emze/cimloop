@@ -1,0 +1,16 @@
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  - name: free_mac
+    subcomponents: []
+    attributes: {}
+    actions: [{name: compute, subcomponents: []}]
+
+  - name: dummy_storage
+    subcomponents: []
+    attributes: {}
+    actions:
+    - {name: read, subcomponents: []} # Unused
+    - {name: write, subcomponents: []} # Unused
+    - {name: leak, subcomponents: []} # Unused
+    - {name: update, subcomponents: []} # Unused

@@ -1,0 +1,54 @@
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Specific to this architecture
+  # ===========================================================================
+  N_COLUMNS: 5
+  N_ROWS: 3
+  GLB_DEPTH_SCALE: 1
+  N_PLCU: 3
+  N_PLCG: 9
+  N_STAR_COUPLED_GROUPS_OF_ROWS: 3
+
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  INPUT_BITS # xnor takes an extra bit
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: offset_encode_hist
+  WEIGHT_ENCODING_FUNC: two_sided_encode_if_signed_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  CIM_UNIT_WIDTH_CELLS:  1
+  CIM_UNIT_DEPTH_CELLS:  1
+  BITS_PER_CELL:         8
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  ADC_RESOLUTION: 8
+  VOLTAGE_DAC_RESOLUTION: 8
+  TEMPORAL_DAC_RESOLUTION: 1
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+  N_ADC_PER_BANK: N_COLUMNS
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  BASE_LATENCY: 0.2E-9 # ns per cycle
+  LATENCY_SCALING_SCALE: 0.625 if scaling == "aggressive" else 1
+  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * LATENCY_SCALING_SCALE * VOLTAGE_LATENCY_SCALE
+  READ_PULSE_WIDTH: GLOBAL_CYCLE_SECONDS

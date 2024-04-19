@@ -1,0 +1,12 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: chip
+    <<<: [*container_defaults]
+
+  - !Container # Tile
+    name: tile_in_chip # long name so it doesn't conflict with other names
+    <<<: [*container_defaults]

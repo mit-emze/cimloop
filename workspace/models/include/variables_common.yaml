@@ -1,0 +1,32 @@
+globals:
+  version: 0.4
+  # The slicing_encoding.py file contains custom functions for encoding and
+  # slicing of operands.
+  expression_custom_functions:
+  - slicing_encoding.py
+
+variables:
+  version: 0.4
+  # Calculate the number of slices needed to store the input and weight bits and
+  # the number of bits in each slice
+  _IN_B: ENCODED_INPUT_BITS # Shorthands so the following lines aren't super long
+  _W_B: ENCODED_WEIGHT_BITS
+  INPUT_BITS_PER_SLICE: min(DAC_RESOLUTION, _IN_B)
+  WEIGHT_BITS_PER_SLICE: min(CIM_UNIT_WIDTH_CELLS * BITS_PER_CELL, _W_B)
+  N_INPUT_SLICES:       ceil(_IN_B / INPUT_BITS_PER_SLICE)
+  N_WEIGHT_SLICES:      ceil(_W_B / WEIGHT_BITS_PER_SLICE)
+
+  # This is for the bitwise-multiplication of the input and weight slices
+  N_VIRTUAL_MACS: INPUT_BITS_PER_SLICE * WEIGHT_BITS_PER_SLICE * ENCODED_OUTPUT_BITS
+
+  # Calculate statistics for input and weight values and bits after encoding
+  _EHTAS: encoded_hist_to_avg_slice # Shorthands so the following lines aren't super long
+  _IN_ENC_FN: INPUT_ENCODING_FUNC
+  _W_ENC_FN: WEIGHT_ENCODING_FUNC
+  AVERAGE_INPUT_VALUE:     _EHTAS(_IN_ENC_FN(INPUTS_HIST), _IN_B, INPUT_BITS_PER_SLICE)
+  AVERAGE_WEIGHT_VALUE:    _EHTAS(_W_ENC_FN(WEIGHTS_HIST), _W_B, WEIGHT_BITS_PER_SLICE)
+  INPUT_BIT_DISTRIBUTION:  _EHTAS(_IN_ENC_FN(INPUTS_HIST), _IN_B, 1, return_per_slice=True)
+  WEIGHT_BIT_DISTRIBUTION: _EHTAS(_W_ENC_FN(WEIGHTS_HIST), _W_B, 1, return_per_slice=True)
+
+  # Just helpful to have
+  INF: 4294967295 # Timeloop can read unsigned ints in input files, so this is the largest value supported

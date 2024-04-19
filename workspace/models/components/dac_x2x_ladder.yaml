@@ -1,0 +1,76 @@
+# Models of R-2R ladder and C-2C ladder DACs as described in the paper: A Charge
+# Domain SRAM Compute-in-Memory Macro With C-2C Ladder-Based 8b MAC Unit in
+# 22-nm FinFET Process for Edge Inference 
+#
+# Wang, Hechen and Liu, Renzhi and Dorrance, Richard and Dasalukunte, Deepak and
+# Lake, Dan and Carlton, Brent
+#
+# 10.1109/JSSC.2022.3232601
+
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  - name: dac_x2x_ladder
+    attributes: &dac_x2x_ladder_attributes
+      resolution: resolution
+      voltage: voltage
+      unit_capacitance: 1e-12  # For C2C DACs
+      unit_resistance: 5e3     # For R2R ladder DACs
+      zero_between_values: zero_between_values
+      scale_x2x_energy_by: 1
+      scale_active_energy_by: 1
+
+      hist: hist
+      bit_distribution: bit_distribution
+      bit_flip_probability: sum(prob * (1 - prob) for prob in bit_distribution) / len(bit_distribution)
+
+    subcomponents:
+      - &DAC_subcomponent
+        name: DAC
+        class: LADDER_TYPE_REPLACE_ME
+        attributes:
+          resolution: resolution
+          voltage: voltage
+          unit_capacitance: unit_capacitance
+          unit_resistance: unit_resistance
+          hist: hist
+
+      - &flip_flops 
+        name: flip_flops
+        class: flip_flop
+        attributes:
+          n_bits: resolution
+
+    actions: &dac_actions
+    - &convert_action
+      name: convert
+      subcomponents:
+      - {name: "DAC", actions: [{name: convert, arguments: {}, energy_scale: scale_x2x_energy_by * scale_active_energy_by}]}  
+      - {name: "flip_flops", actions: [{name: read, energy_scale: bit_flip_probability * scale_active_energy_by}]}
+
+    - {name: write, subcomponents: []}
+    - {name: update, subcomponents: []}
+    - {name: read, subcomponents: []}
+    - name: leak
+      subcomponents:
+      - {name: "DAC", actions: [{name: leak}]}
+      - {name: "flip_flops", actions: [{name: leak}]}
+    - {name: read, <<: *convert_action}
+
+  # These reference the above x2x ladder
+  - name: dac_r2r_ladder_compound
+    attributes: *dac_x2x_ladder_attributes
+    subcomponents:
+    - <<<: *DAC_subcomponent
+      class: dac_r2r_ladder
+    - *flip_flops
+    actions: *dac_actions
+
+  # These reference the above x2x ladder
+  - name: dac_c2c_ladder_compound
+    attributes: *dac_x2x_ladder_attributes
+    subcomponents:
+    - <<<: *DAC_subcomponent
+      class: dac_c2c_ladder
+    - *flip_flops 
+    actions: *dac_actions

@@ -1,0 +1,96 @@
+{{include_text('defines.yaml')}}
+
+# timeloopfe will include this list in the final model, even if keys are unrecognized
+include:
+- pim_attrs_new: &pim_attrs_new
+    <<: *cim_component_attributes
+    temporal_spiking: True
+- cim_component_attributes: &cim_component_attributes
+    <<: *pim_attrs_new
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # Weight drivers write weights
+    name: weight_drivers
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: weight_row_drivers
+    attributes: {width: ARRAY_BITLINES, <<: *cim_component_attributes}
+
+  - !Component # Counter turns a digital input into a spike count
+    name: counter
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: aladdin_counter
+    attributes:
+      width: DAC_RESOLUTION
+      n_bits: DAC_RESOLUTION
+      energy_scale: AVERAGE_INPUT_VALUE * (2 ** DAC_RESOLUTION - 1) * VOLTAGE_ENERGY_SCALE
+      n_instances: ARRAY_PARALLEL_INPUTS
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: 
+      width: DAC_RESOLUTION
+      <<: *cim_component_attributes
+      temporal_dac_bits: DAC_RESOLUTION
+      temporal_spiking: True
+
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes: {<<<: *cim_component_attributes}
+  - !Component # Column drivers
+    name: column_drivers
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: column_drivers
+    attributes: {<<<: *cim_component_attributes}
+
+  - !ArrayContainer # Each column stores a different weight slice. Columns share inputs.
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: N_COLUMNS}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column.get_fanout()))]}}
+    
+
+  - !Component # Column bandwidth limiter to limit write speed (only one value can be written per column per cycle)
+    name: column_bandwidth_limiter
+    <<<: [*component_defaults, *keep_weights, *keep_outputs, *no_coalesce]
+    attributes:
+      width: 1
+      read_bandwidth:  1
+      per_dataspace_bandwidth_consumption_scale:
+        # Writing is on average 1 / 0.75 x faster than CiM
+        Weights: 1 / 0.75 / WEIGHT_BITS_PER_SLICE
+        Outputs: 1 / ENCODED_OUTPUT_BITS
+
+  - !Component # Compensation capacitors
+    name: binary_weighting_capacitors
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: capacitor
+    attributes: 
+      capacitance: 1e-15 * 2 ** CIM_UNIT_WIDTH_CELLS
+      cap_f_per_m2: 1.7e-3
+      voltage: VOLTAGE
+      width: ENCODED_OUTPUT_BITS
+      energy_scale: AVERAGE_INPUT_VALUE * AVERAGE_WEIGHT_VALUE * 224 / 64
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: 64}
+    constraints: {spatial: {maximize_dims: [R, S, C]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

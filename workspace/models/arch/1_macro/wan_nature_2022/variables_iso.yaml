@@ -1,0 +1,37 @@
+# These variables pertain to the workload, microarch, and circuits. They should
+# be matched between architectures when comparing for a fair comparison.
+# Furthermore, this file should follow the same format for all architectures
+# such that we can mix and match architectures with different iso files.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Workload, microarch, circuits. Things that should be matched
+  # between architectures when comparing.
+  # ===========================================================================
+  ## Workload -----------------------------------------------------------------
+  WEIGHT_BITS: 4
+  INPUT_BITS:  8
+  OUTPUT_BITS: 8
+  BATCH_SIZE:  1
+
+  # Set by CiM processor if these values are available in the workload.
+  # Otherwise, use the defaults here.
+  INPUTS_HIST:  ([5,5,6,6,7,7,8,8,8,7,7,6,6,5,5]) # Looks like fig 7e
+  WEIGHTS_HIST: ([5,5,6,6,7,7,8,8,8,7,7,6,6,5,5]) # Looks like fig 7e
+  OUTPUTS_HIST: INPUTS_HIST
+
+  ## Microarch ----------------------------------------------------------------
+  SUPPORTED_INPUT_BITS:  8       # Maximum input bits supported by the arch.
+  SUPPORTED_WEIGHT_BITS: WEIGHT_BITS # Maximum weight bits supported by the arch.
+  SUPPORTED_OUTPUT_BITS: 10      # Maximum output bits supported by the arch.
+
+  # Circuits ------------------------------------------------------------------
+  VOLTAGE: 1.8
+  TECHNOLOGY: 130 # nm
+  CELL_CONFIG: "{{find_path('rram_wan_nature_2022.cell.yaml')}}"
+  VOLTAGE_LATENCY_SCALE: 1.8 / VOLTAGE
+
+  # Calibration ---------------------------------------------------------------
+  ADC_ENERGY_SCALE: 1
+  ADC_AREA_SCALE: 1
+  ROW_COL_DRIVERS_AREA_SCALE: 5.25

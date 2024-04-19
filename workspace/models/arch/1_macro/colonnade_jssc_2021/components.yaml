@@ -1,0 +1,94 @@
+{{include_text('defines.yaml')}}
+
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  # ===========================================================================
+  - name: colonnade_cim_logic # Weight port to the per-cell MAC logic
+    attributes: 
+      voltage_energy_scale: VOLTAGE_ENERGY_SCALE
+      width: "must_specify"
+      switching_activity: "must_specify"
+      leakage_energy_scale: VOLTAGE_ENERGY_SCALE ** 0.5 # ~linear with VDD
+    subcomponents: # There's also two MUXes and an XNOR, but we'll approximate everything using
+    - name: adder  # a calibrated adder as a proxy for the entire logic 
+      class: intadder
+      attributes:
+        n_bits: width
+        voltage: 0.8 # KEEP FIXED AT 0.8 BECAUSE WE ALREADY ACCOUNTED FOR THIS IN VOLTAGE_ENERGY_SCALE
+      area_scale: 0.9 # Calibrate to Colonnade
+    actions:
+    - name: read
+      subcomponents:
+      - {name: adder, actions: [{name: read, energy_scale: voltage_energy_scale * 0.03 * switching_activity}]}
+    - name: leak
+      subcomponents:
+      - {name: adder, actions: [{name: leak, energy_scale: leakage_energy_scale}]}
+    - {name: update, subcomponents: []} # Unused
+    - {name: write, subcomponents: []} # Unused
+
+  # ===========================================================================
+  - name: colonnade_cim_logic_input_port # Input port to the per-cell MAC logic
+    attributes: 
+      voltage_energy_scale: VOLTAGE_ENERGY_SCALE
+      leakage_energy_scale: VOLTAGE_ENERGY_SCALE ** 0.5 # ~linear with VDD
+      width: "must_specify"
+      switching_activity: "must_specify"
+
+      # NOTE that we scale read energy by n_instances. This is because when one row is
+      # asserted, ALL input ports are activated on that row.
+      read_energy_scale: n_instances * voltage_energy_scale * switching_activity
+      # n_instances is factored into leaking automatically
+      leak_energy_scale: leakage_energy_scale * 15 # High-leakage technology
+    subcomponents:
+    - name: logic
+      class: intadder # Use an adder as a proxy for the entire logic
+      attributes:
+        n_bits: 1
+        voltage: 0.8 # KEEP FIXED AT 0.8 BECAUSE WE ALREADY ACCOUNTED FOR THIS IN VOLTAGE_ENERGY_SCALE
+      area_scale: 0 # Account for area in colonnade_cim_logic
+    - name: wire_cap
+      class: capacitor
+      attributes:
+        capacitance: 1e-15
+        voltage: 0.8 # KEEP FIXED AT 0.8 BECAUSE WE ALREADY ACCOUNTED FOR THIS IN VOLTAGE_ENERGY_SCALE
+      area_scale: 0 # Account for area in colonnade_cim_logic
+    actions:
+    - name: read
+      subcomponents:
+      - {name: logic, actions: [{name: read, energy_scale: read_energy_scale * switching_activity}]}
+      - {name: wire_cap, actions: [{name: read, energy_scale: read_energy_scale * switching_activity}]}
+    - name: leak
+      subcomponents:
+      - {name: logic, actions: [{name: leak, energy_scale: leak_energy_scale}]}
+      - {name: wire_cap, actions: [{name: leak, energy_scale: leak_energy_scale}]}
+    - {name: update, subcomponents: []} # Unused
+    - {name: write, subcomponents: []} # Unused
+
+  # ===========================================================================
+  - name: colonnade_register # Registers on columns are flip flops
+    attributes: 
+      <<: *cim_component_attributes_compound_component
+      switching_activity: (AVERAGE_INPUT_VALUE * (1 - AVERAGE_INPUT_VALUE)) ** 0.5
+      voltage_energy_scale: VOLTAGE_ENERGY_SCALE
+      leakage_energy_scale: VOLTAGE_ENERGY_SCALE ** 0.5 # ~linear with VDD
+    subcomponents:
+    - name: flip_flop
+      class: flip_flop
+      attributes:
+        n_bits: 1
+        voltage: 0.8 # KEEP FIXED AT 0.8 BECAUSE WE ALREADY ACCOUNTED FOR THIS IN VOLTAGE_ENERGY_SCALE
+        <<: *cim_component_attributes_compound_component_subcomponent
+      area_scale: 1.3 # Calibrate to Colonnade
+    actions:
+    - name: read
+      subcomponents: # 0.3 is a scaling factor to calibrate to Colonnade
+      - {name: flip_flop, actions: [{name: read, energy_scale: voltage_energy_scale * 0.3}]}
+    - &write
+      name: write
+      subcomponents: # 0.3 is a scaling factor to calibrate to Colonnade
+      - {name: flip_flop, actions: [{name: write, energy_scale: voltage_energy_scale * 0.3}]}
+    - name: leak
+      subcomponents: # 0.3 is a scaling factor to calibrate to Colonnade
+      - {name: flip_flop, actions: [{name: leak, energy_scale: leakage_energy_scale * 0.3}]}
+    - {name: update, <<: *write} # Same as write

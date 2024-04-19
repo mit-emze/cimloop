@@ -1,0 +1,26 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: system
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # Chip: data that makes it here is residing in other tiles
+    name: main_memory
+    <<<: [*component_defaults]
+    subclass: DRAM
+    attributes: {depth: INF, width: 128, type: "LPDDR4"}
+    constraints: 
+      dataspace: {keep_only: [Weights]}
+      temporal: 
+        no_iteration_over_dataspaces: !nomerge [] # Can iterate over weights
+        permutation: [X, Y, Z, Q, P, N, G, C, M, R, S] # Weight-stationary
+
+  - !Container # Chip
+    name: chip_in_system # long name so it doesn't conflict with other names
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 1}

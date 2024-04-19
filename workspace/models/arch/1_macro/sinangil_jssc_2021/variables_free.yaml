@@ -1,0 +1,46 @@
+# These variables pertain to various design choices. They do not need to be
+# matched while comparing architectures.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  INPUT_BITS * (2 if is_hist_signed(INPUTS_HIST) else 1)
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS * (2 if is_hist_signed(WEIGHTS_HIST) else 1)
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: two_sided_encode_if_signed_hist
+  WEIGHT_ENCODING_FUNC: two_sided_encode_if_signed_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  CIM_UNIT_WIDTH_CELLS:  4
+  CIM_UNIT_DEPTH_CELLS:  1
+  BITS_PER_CELL:         1
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  N_COLUMNS: 16
+  ADC_RESOLUTION: 4
+  VOLTAGE_DAC_RESOLUTION: 1
+  TEMPORAL_DAC_RESOLUTION: 4
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+  N_ADC_PER_BANK: N_COLUMNS
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  BASE_LATENCY: 5.5e-9 # ns per cycle
+  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * VOLTAGE_LATENCY_SCALE
+  READ_PULSE_WIDTH: GLOBAL_CYCLE_SECONDS / 2 / (2 ** DAC_RESOLUTION - 1)

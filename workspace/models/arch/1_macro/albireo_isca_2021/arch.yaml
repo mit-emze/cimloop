@@ -1,0 +1,224 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+    attributes:
+      technology: TECHNOLOGY
+
+  - !Component # Global buffer stores inputs operands
+    name: global_buffer
+    <<<: [*component_defaults]
+    subclass: albireo_sram
+    attributes:
+      depth: round(32768 * GLB_DEPTH_SCALE)
+      width: 128
+      n_banks: 32
+      datawidth: 1
+    constraints: 
+      dataspace: {keep_only: [Inputs, Outputs]}
+      temporal: 
+        factors_only: [M=-1, C=-1, P=-1, Q=-1, N=-1, R=-1, S=-1]
+        factors: []
+        no_iteration_over_dataspaces: !nomerge [] # Overwrite default
+        permutation: [N, P, Q, M, C, R, S] # Weight stationary
+
+  - !Component # DAC supplies analog input values
+    name: input_dac
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: dac_albireo
+    attributes: {width: ENCODED_INPUT_BITS}
+  - !Component # MZM modulates input light using values from DAC
+    name: input_mach_zehnder_modulator
+    subclass: albireo_mzm
+    <<<: [*component_defaults, *keep_inputs, *no_temporal_reuse]
+    attributes: {width: ENCODED_INPUT_BITS, n_instances: 21 * N_PLCU}
+
+  - !Component # MRR multiplexes input light
+    name: input_MRR
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: albireo_mrr
+    attributes: {width: ENCODED_INPUT_BITS, n_instances: 21 * N_PLCU}
+
+  - !Container # Tile contains weight cache and works on one set of outputs
+    name: photonic_locally_connected_group_PLCG
+    <<<: [*container_defaults]
+    spatial: {meshX: N_PLCG}
+    constraints:
+      spatial:
+        no_reuse: [Outputs, Weights]
+        no_iteration_over_dataspaces: [Inputs]
+        maximize_dims: [[M]]
+
+  - !Component # Weight cache stores weights
+    name: weight_cache
+    <<<: [*component_defaults, *keep_weights]
+    subclass: albireo_sram
+    attributes:
+      depth: 4096
+      width: 64
+      datawidth: 8               # To ensure that we can run weight-stationary
+      multiple_buffering: 0.0001 # (as assumed in the Albireo paper)
+    constraints: 
+      temporal: 
+        factors_only: [M=-1]
+        factors: []
+        no_iteration_over_dataspaces: !nomerge [] # Overwrite default
+
+  - !Component # Output buffer stores outputs
+    name: output_regs
+    <<<: [*component_defaults, *keep_outputs]
+    subclass: albireo_sram
+    constraints: 
+      dataspace: {keep_only: [Outputs]}
+      temporal: {factors_only: []}
+    attributes:
+      depth: 1
+      datawidth: 1
+      width: ENCODED_OUTPUT_BITS * N_COLUMNS
+
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes: {<<<: *cim_component_attributes}
+
+  - !Component # TIA converts analog current to voltage for ADC
+    name: TIA
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: albireo_tia
+    attributes: {width: ENCODED_OUTPUT_BITS, n_instances: N_ADC_PER_BANK}
+
+  - !Container # PLCU computes a grid of MACs
+    name: photonic_locally_connected_unit_PLCU
+    <<<: [*container_defaults]
+    spatial: {meshX: N_PLCU}
+    constraints:
+      spatial:
+        no_reuse: [Inputs, Weights] # Output reuse is allowed
+        no_iteration_over_dataspaces: [Outputs]
+        maximize_dims: [[C, R, S]]
+
+  - !Component # Photodiode converts output light to analog current
+    name: photodiode_output_readout
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: albireo_photodiode
+    attributes:
+      depth: 1
+      width: ENCODED_OUTPUT_BITS * N_COLUMNS
+
+  - !ArrayContainer # Each star coupled group of rows works on a different set of inputs and the same set of outputs
+    name: star_coupled_group_of_rows
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: N_STAR_COUPLED_GROUPS_OF_ROWS}
+    constraints:
+      spatial:
+        maximize_dims: [[C, R, S]]
+        split: 0
+    max_utilization: {spatial: {factors: [('C=' + str(star_coupled_group_of_rows.get_fanout()))]}}
+
+
+  - !Component # Arrayed waveguide grating demultiplexes input light, sends some wavelengths to each PLCU
+    name: awg
+    subclass: albireo_awg
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    attributes: {width: ENCODED_INPUT_BITS}
+
+  - !Component # Star coupler is an any-to-any optical interconnect
+    name: star_coupler
+    # Not passthrough. Star couplers CAN coalesce
+    <<<: [*component_defaults, *keep_inputs, *no_temporal_reuse]
+    subclass: albireo_star_coupler
+    attributes: 
+      depth: 1
+      n_inputs: 21 // N_STAR_COUPLED_GROUPS_OF_ROWS
+      width: n_inputs * ENCODED_INPUT_BITS
+
+  - !ArrayContainer # Each row works on a different column of the filter weights
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: N_ROWS}
+    attributes:
+      # Doing some math here
+      max_inputs: star_coupler.attributes["n_inputs"]
+      max_outputs: N_COLUMNS
+      max_weights: N_ROWS
+
+      # If max utilization is set, then the problem R will be set
+      # to fill up utilization anyway and we can ignore the R restriction
+      maximize_r: not spec.variables.get("MAX_UTILIZATION", False)
+      max_r: spec.problem.instance["R"] if maximize_r else max_weights
+
+      # Calculate the maximum number of filter rows we can fit in the array
+      wstride: spec.problem.instance["Wstride"]
+      assigned_r: min(max_r, max_weights, ceil((max_inputs - max_outputs) / wstride + 1))
+
+      # If it's an FC layer with batch size = 1, then set C as large as possible
+      is_fc: spec.problem.instance["P"] == 1 and spec.problem.instance["R"] == 1 and spec.problem.instance["N"] == 1
+      maximize_c: not spec.variables.get("MAX_UTILIZATION", False) and is_fc
+      max_c: spec.problem.instance["C"] if not spec.variables.get("MAX_UTILIZATION", False) else 1
+      assigned_c: min(max_c, max_weights, max_inputs) if maximize_c else -1
+
+    constraints:
+      spatial:
+        split: 0
+        no_reuse: [Weights]
+        factors_only:
+        - f"R={attributes['assigned_r']}"
+        - f"C={attributes['assigned_c']}"
+        # Input AND output reuse allowed within star couplers
+    max_utilization: {spatial: {factors: [('R=' + str(row.get_fanout()))]}}
+
+  - !Component # DAC supplies analog weight values
+    name: weight_dac
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: dac_albireo
+    attributes: {width: ENCODED_WEIGHT_BITS}
+
+  - !Component # An MZM modulates light with weight (now double-modulated --> multiplied input and weight)
+    # This MZM modulates analog-optical inputs using an analog-electrical weight. For purposes of
+    # calculating energy, we break this into two separate components, one for each port. This
+    # allows us to use a different energy for each port. We don't actually use this in the Albireo
+    # model because Albireo uses fixed-power components, but we leave it here for ease of extension.
+    # To apply a different energy for each port, modify the subclasses of the two ports.
+    name: weight_mach_zehnder_modulator
+    subclass: albireo_mzm
+    <<<: [*component_defaults, *keep_weights, *no_temporal_reuse]
+    attributes: {width: ENCODED_WEIGHT_BITS}
+  - !Component
+    name: weight_mach_zehnder_modulator_input_port
+    subclass: dummy_storage
+    <<<: [*component_defaults, *keep_inputs, *no_temporal_reuse]
+    attributes: {width: ENCODED_INPUT_BITS}
+
+  - !ArrayContainer # Each column works on a different output. We try to have different columns work on different
+                    # Ps in the output so that we can get input reuse among neighboring rows (over which we map R).
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_weights]
+    spatial: {meshX: N_COLUMNS}
+    constraints:
+      spatial:
+        maximize_dims: [[P], [N]]
+        no_iteration_over_dataspaces: [Weights]
+        factors: [Q=1]
+    max_utilization: {spatial: {factors: [('P=' + str(column.get_fanout()))]}}
+
+  - !Component # A MRR in each row/column crossing grabs one wavelength of input/weight multiplied light to send to an output
+    name: MRR
+    subclass: albireo_mrr
+    <<<: [*component_defaults, *keep_inputs, *keep_weights, *no_temporal_reuse]
+    attributes: {n_instances: 2}
+
+  - !Component # Put laser down here -> power is proportional to the number of endpoints
+    name: laser
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: albireo_laser
+    attributes:
+      width: ENCODED_INPUT_BITS
+      power_gated_at: "global_buffer" # Laser is on or off for the whole chip
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

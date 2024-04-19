@@ -1,0 +1,131 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # Out datapath post-processes outputs (quantization, etc.)
+    name: out_datapath
+    subclass: jia_datapath
+    attributes: 
+      width: ENCODED_OUTPUT_BITS
+      n_instances: ARRAY_PARALLEL_OUTPUTS // 8
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+
+  - !Component # Shift-add sums outputs from multiple slices
+    name: shift_add
+    <<<: [*component_defaults, *keep_outputs, *no_temporal_reuse]
+    subclass: jia_shift_add
+    attributes: 
+      <<<: *cim_component_attributes
+      width: ENCODED_OUTPUT_BITS
+      n_instances: ARRAY_PARALLEL_OUTPUTS // 8
+    constraints: 
+      temporal: 
+        no_reuse: ['*']
+        factors_only: 
+          - f"X={INPUT_BITS}"
+
+  - !Component # Input zero gating disables circuits for zero-valued inputs
+    name: input_zero_gating
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: zero_comparator
+    attributes:
+      n_bits:        ENCODED_INPUT_BITS
+      n_comparators: ARRAY_PARALLEL_INPUTS // 1
+      n_flags_store: ARRAY_PARALLEL_INPUTS
+      dynamic_energy_scale:  (VOLTAGE / 0.85) ** 2
+      leakage_energy_scale:  0.02 # Low-leakage technology
+      include_n_zeros_counter: 1
+      <<: *cim_component_attributes
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: {width: DAC_RESOLUTION, <<: *cim_component_attributes}
+
+  - !Component # Weight drivers write weights
+    name: weight_drivers
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: weight_row_drivers
+    attributes: {width: ARRAY_BITLINES, <<: *cim_component_attributes}
+
+  # ===========================================================================
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes: {<<<: *cim_component_attributes}
+  - !Component # Column Drivers
+    name: column_drivers
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: column_drivers
+    attributes: {<<<: *cim_component_attributes}
+
+  - !ArrayContainer # Each group of columns can be independently power-gated
+    name: column_group
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: N_ARRAY_ROW_COLUMN_GROUPS}
+    constraints: {spatial: {maximize_dims: [Y, M]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column_group.get_fanout()))]}}
+
+  - !ArrayContainer # Each column stores a different weight slice. Columns share inputs.
+    name: column_subgroup
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: N_NON_FOLDED_COLUMNS}
+    constraints: {spatial: {maximize_dims: [Y, M]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column_subgroup.get_fanout()))]}}
+
+  - !ArrayContainer # Folded columns are columns share outputs rather than inputs
+    name: folded_columns_share_outputs
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshX: N_FOLDED_COLUMNS}
+    constraints: {spatial: {maximize_dims: [C, R, S]}}
+    max_utilization: {spatial: {factors: [('C=' + str(folded_columns_share_outputs.get_fanout()))]}}
+
+  - !Component # Column bandwidth limiter to limit write speed (only one value can be written per column per cycle)
+    name: column_bandwidth_limiter
+    <<<: [*component_defaults, *keep_weights, *keep_outputs, *no_coalesce]
+    attributes:
+      read_bandwidth:  1
+      per_dataspace_bandwidth_consumption_scale:
+        # Paper says one row write takes 20 cycles.
+        # Additional factor of 20 / 50 because one cycle in this model is the
+        # time used to run the analog compute, which is ~50 cycles in the paper
+        Weights: (20 / 50) * WEIGHT_BITS_PER_SLICE 
+        Outputs: 1 / ENCODED_OUTPUT_BITS
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row_group
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    attributes: {has_power_gating: True}
+    spatial: {meshY: N_ARRAY_ROW_COLUMN_GROUPS}
+    constraints: {spatial: {maximize_dims: [C, R, S]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row_group.get_fanout()))]}}
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: 192}
+    constraints: {spatial: {maximize_dims: [C, R, S]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+
+  - !Component # Capacitors used to compute MAC operations in the SRAM array
+    name: bitcell_capacitor
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: capacitor
+    attributes:
+      voltage: VOLTAGE
+      capacitance: 5e-15
+      stacked: True # Account for the area in the cell file
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

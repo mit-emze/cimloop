@@ -1,0 +1,90 @@
+# timeloopfe will include this list in the final model, even if keys are unrecognized
+globals:
+  version: 0.4
+  expression_custom_functions:
+  - helper_functions.py
+
+
+# These variables pertain to various design choices. They do not need to be
+# matched while comparing architectures.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Architecture parameters
+  # ===========================================================================
+  ONE_PHASE: False
+  # MAGNITUDE bits ; sign bit not included in this count
+  MAX_INPUT_BITS_BEFORE_TWO_PHASE: 3 
+
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  max(1, INPUT_BITS - (1 if is_hist_signed(INPUTS_HIST) else 0))
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS * (2 if is_hist_signed(WEIGHTS_HIST) else 1)
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: magnitude_encode_hist
+  WEIGHT_ENCODING_FUNC: two_sided_encode_if_signed_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  CIM_UNIT_WIDTH_CELLS:  1
+  CIM_UNIT_DEPTH_CELLS:  1
+  BITS_PER_CELL:         WEIGHT_BITS
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  ADC_RESOLUTION: 8
+  VOLTAGE_DAC_RESOLUTION: 1
+  TEMPORAL_DAC_RESOLUTION: 1
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+
+  N_ADC_PER_BANK: 1
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  # All the math below is done in terms of the NUMBER OF MAGNITUDE BITS of the
+  # input, not the total bits. The architecture supports signed inputs, so with
+  # an N-bit signed input, we only need to process N-1 steps. If the input is
+  # unsigned, we need to process N steps. The N-1 versus N is accounted for
+  # above in the ENCODED_INPUT_BITS variable.
+
+  LATENCY_INTEGRATE:   0.27e-6
+  LATENCY_ADC_STEP:    0.3e-6
+  LATENCY_INTER_PHASE: 0.3e-6 # Includes sampling
+
+  # Functions are defined in helper_functions.py and included with the earlier include_math_functions
+
+  PHASES: (bits2phase_1phase if ONE_PHASE else bits2phase_2phase)(ENCODED_INPUT_BITS, MAX_INPUT_BITS_BEFORE_TWO_PHASE)
+
+  INTEGRATION_STEPS: sum_map(bits2integration_steps, PHASES)
+
+  N_PHASES: sum([p > 0 for p in PHASES])
+  ADC_STEPS_PER_INPUT: sum_phase_out_bits(ENCODED_OUTPUT_BITS, PHASES)
+
+  INTEGRATION_STEPS_PER_INPUT_BIT: INTEGRATION_STEPS / ENCODED_INPUT_BITS
+  ADC_STEPS_PER_INPUT_BIT: ADC_STEPS_PER_INPUT / ENCODED_INPUT_BITS
+  INTER_PHASES_PER_INPUT_BIT: N_PHASES / ENCODED_INPUT_BITS
+
+  T_LATENCY_INTEGRATE:   LATENCY_INTEGRATE * INTEGRATION_STEPS_PER_INPUT_BIT
+  T_LATENCY_ADC_STEP:    LATENCY_ADC_STEP * ADC_STEPS_PER_INPUT_BIT
+  T_LATENCY_INTER_PHASE: LATENCY_INTER_PHASE * INTER_PHASES_PER_INPUT_BIT
+
+  BASE_LATENCY: T_LATENCY_INTEGRATE + T_LATENCY_ADC_STEP + T_LATENCY_INTER_PHASE
+  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * VOLTAGE_LATENCY_SCALE
+  READ_PULSE_WIDTH: 10e-9
+
+  ARRAY_ROWS: 256
+  ARRAY_COLS: 256

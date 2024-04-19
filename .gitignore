@@ -1,0 +1,11 @@
+**/outputs/*
+*.pyc
+*__pycache__/
+*.egg-info/
+*.egg
+*.log
+*.swp
+*.swo
+*.swn
+*.vscode/
+*.pyc

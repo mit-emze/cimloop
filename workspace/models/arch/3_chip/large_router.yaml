@@ -1,0 +1,27 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: chip
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Container # Tile
+    name: shared_router_group
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 32}
+
+  - !Component # Router: Sends data to other tiles
+    name: router
+    <<<: [*component_defaults, *keep_inputs, *keep_outputs, *no_temporal_reuse]
+    subclass: isaac_router_shared_by_four
+    attributes: {depth: INF, width: 128}
+
+  - !Container # Tile
+    name: tile_in_chip # long name so it doesn't conflict with other names
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 4}

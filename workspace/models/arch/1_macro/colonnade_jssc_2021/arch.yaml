@@ -1,0 +1,95 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: {width: DAC_RESOLUTION, <<: *cim_component_attributes}
+
+  - !Component # Model the digital logic input ports here, rather than in the CIM logic,
+               # because each time a row is asserted, it sends its input to ALL input
+               # ports on that row.
+    name: digital_logic_input_ports
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: colonnade_cim_logic_input_port
+    attributes: 
+      width: DAC_RESOLUTION
+      n_instances: column.get_fanout()
+      switching_activity: (AVERAGE_INPUT_VALUE * (1 - AVERAGE_INPUT_VALUE)) ** 0.5
+      voltage: VOLTAGE
+
+  - !Component # Column drivers
+    name: column_drivers
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: column_drivers
+    # The Colonnade chip has a wordline decoder. In this model, which is a
+    # transposed version of Colonnade, we would have a bitline decoder.
+    # To model the wordline decoder, we would have to set cols_active_at_once=1,
+    # which tells the NeuroSim plug-in to generate a full decoder for the columns.
+    attributes: {<<<: *cim_component_attributes, cols_active_at_once: 1}
+
+  - !Component # Weight drivers write weights
+    name: weight_drivers
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: weight_row_drivers
+    attributes: {width: ARRAY_BITLINES, <<: *cim_component_attributes}
+
+  - !ArrayContainer # Different columns store different weight bits
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: 128}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column.get_fanout()))]}}
+
+  - !Component # Column bandwidth limiter to limit write speed (only one value can be written per column per cycle)
+    name: column_bandwidth_limiter
+    <<<: [*component_defaults, *keep_weights, *keep_outputs, *no_coalesce]
+    attributes:
+      width: 1
+      read_bandwidth:  1
+      per_dataspace_bandwidth_consumption_scale:
+        Weights: 1 / WEIGHT_BITS_PER_SLICE
+        Outputs: 1 / ENCODED_OUTPUT_BITS
+
+  - !ArrayContainer # Each group of rows has a register for pipelining
+    name: row_group
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: N_REGS_PER_COL}
+    constraints: {spatial: {maximize_dims: [[R, S, C]]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row_group.get_fanout()))]}}
+    
+
+  - !Component # Register stores partially-accumulated outputs
+    name: register
+    <<<: [*component_defaults, *no_temporal_iteration, *no_temporal_reuse, *keep_outputs]
+    subclass: colonnade_register
+    attributes: {width: ENCODED_OUTPUT_BITS, depth: 1, <<: *cim_component_attributes}
+
+  - !ArrayContainer # Each row receives one input bit at a time
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: N_ROWS_PER_REG}
+    constraints: {spatial: {maximize_dims: [[R, S, C]]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit
+
+  - !Component # Register stores partially-accumulated outputs
+    name: cim_logic
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: colonnade_cim_logic
+    attributes: 
+      width: CIM_UNIT_WIDTH_CELLS * BITS_PER_CELL
+      switching_activity: N_ADDERS_CRITICAL_PATH * (AVERAGE_INPUT_VALUE * (1 - AVERAGE_INPUT_VALUE)) ** 0.5
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

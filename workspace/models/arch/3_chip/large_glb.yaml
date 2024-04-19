@@ -1,0 +1,32 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: chip
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # DRAM main memory
+    name: glb
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes: 
+      width: 2048
+      depth: 1024 * 1024 * 64 * 8 // width # 64MB
+      # Assume we can get higher capacity with layer fusion ; simulate this
+      # capacity with multiple_buffering
+      multiple_buffering: 1 / 32 / BATCH_SIZE 
+    constraints: 
+      dataspace: {keep_only: [Inputs, Outputs]}
+      temporal:
+        factors: !nomerge [Q=0, M=-1, C=-1, X=1]
+        permutation: [N, M, C, Q, P]
+        no_iteration_over_dataspaces: !nomerge []
+
+  - !Container # Tile
+    name: tile_in_chip # long name so it doesn't conflict with other names
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 32}

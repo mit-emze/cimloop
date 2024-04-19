@@ -1,0 +1,159 @@
+# The C2C multiplier looks like the following:
+#
+# - For operand A as an analog voltage
+# - Operand B is a binary digital value with bits B0, B1, B2... from least to
+#   most significant
+#
+# The circuit looks like:
+#
+#         2C      2C         2C         2C         2C         2C    
+#      G──||───┰──||──────┰──||──────┰──||──────┰──||──────┰──||──── -> OUT
+#              = C        = C        = C        = C        = C      
+#              │          │          │          │          │        
+#               ╲─── B0    ╲─── B1    ╲─── B2    ╲─── B3    ╲─── B4 
+#             │  G       │  G       │  G       │  G       │  G      
+#      A──────┴──────────┴──────────┴──────────┴──────────┴─────────
+#
+# Energy is consumed when:
+# 1. A increases, and all the B capacitors are charged
+# 2. Any B bit goes 0->1, and the corresponding capacitor is charged
+
+# USAGE: In your architecture, initialize a both a c2c_mult_input_port_a and a
+# c2c_mult_input_port_b. Have the "a" port process the analog operand and have
+# the "b" port process the digital operand.
+
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  - name: c2c_multiplier
+    attributes:
+      resolution: resolution
+      voltage: voltage
+      unit_capacitance: 1e-15
+      a_hist: a_hist
+      b_bit_distribution: b_bit_distribution
+
+      a_rms: (sum(i ** 2 * prob for i, prob in enumerate(a_hist))
+          / sum(a_hist)) ** 0.5 * voltage / (len(a_hist) - 1)
+      b_lo2hi_probability: sum(prob * (1 - prob) for prob in b_bit_distribution)
+          / len(b_bit_distribution)
+      capacitors_are_stacked: 0
+
+      technology: technology
+      cap_f_per_m2: None
+
+      # The reference node sees a cap of unit_capacitance * 1.67 / resolution 
+      # per bit on average assuming a uniform-ish distribution of bits
+      ref_node_equivalent_capacitance_scale: 1.67 / resolution
+
+    subcomponents:
+      - name: unit_cap[1..resolution]
+        class: capacitor
+        attributes:
+            capacitance: unit_capacitance
+            voltage: voltage
+            stacked: capacitors_are_stacked
+            cap_f_per_m2: cap_f_per_m2
+
+      - name: unit2_cap[1..resolution]
+        class: capacitor
+        attributes:
+            capacitance: unit_capacitance * 2
+            voltage: voltage
+            stacked: capacitors_are_stacked
+            cap_f_per_m2: cap_f_per_m2
+
+      - name: control_pass_gate[1..resolution]
+        class: pass_gate
+        attributes: {technology: technology, n_instances: 2}
+
+      - name: inverter[1..resolution]
+        class: not_gate
+        attributes: {technology: technology, n_instances: 2}
+
+    actions:
+    # Switch A: Charge all capacitors to the value of A
+      - name: switch_a
+        subcomponents:
+          - name: unit_cap[1..resolution]
+            actions:
+              - name: switch
+                arguments: {value_probabilities: a_hist, zero_between_values: false}
+                energy_scale: ref_node_equivalent_capacitance_scale
+          - name: unit2_cap[1..resolution]
+            actions:
+              - name: switch
+                arguments: {value_probabilities: a_hist, zero_between_values: false}
+                energy_scale: ref_node_equivalent_capacitance_scale
+
+    # Switch B: Connect capacitors to A with probability b_lo2hi_probability
+      - name: switch_b
+        subcomponents:
+          - name: unit_cap[1..resolution]
+            actions:
+              - name: raise_voltage_to
+                arguments: {target_voltage: a_rms}
+                energy_scale: b_lo2hi_probability * 1 # 3 = 1C + 2C
+          - name: unit2_cap[1..resolution]
+            actions:
+              - name: raise_voltage_to
+                arguments: {target_voltage: a_rms}
+                energy_scale: b_lo2hi_probability * 1 # 3 = 1C + 2C
+
+  - name: c2c_mult_input_port_a
+    attributes:
+      resolution: resolution
+      voltage: voltage
+      unit_capacitance: 1e-15
+      a_hist: a_hist
+      b_bit_distribution: b_bit_distribution
+      ref_node_equivalent_capacitance_scale: 1.67 / 8 # The reference node sees a cap of unit_capacitance * 1.67 / 8 per bit on average
+      cap_f_per_m2: None
+
+    subcomponents:
+    - name: c2c_multiplier # Inherit all necessary attributes from this compound component
+      class: c2c_multiplier
+      attributes:
+        resolution: resolution
+        voltage: voltage
+        unit_capacitance: unit_capacitance
+        a_hist: a_hist
+        b_bit_distribution: b_bit_distribution
+        ref_node_equivalent_capacitance_scale: ref_node_equivalent_capacitance_scale
+        cap_f_per_m2: cap_f_per_m2
+
+    actions:
+    - {name: write, subcomponents: []}
+    - {name: update, subcomponents: []}
+    - {name: read, subcomponents: [{name: c2c_multiplier, actions: [name: switch_a]}]}
+    - {name: write, subcomponents: [{name: c2c_multiplier, actions: [name: switch_a]}]}
+    - {name: leak, subcomponents: []}
+
+  - name: c2c_mult_input_port_b
+    attributes:
+      resolution: resolution
+      voltage: voltage
+      unit_capacitance: 1e-15
+      a_hist: a_hist
+      b_bit_distribution: b_bit_distribution
+      ref_node_equivalent_capacitance_scale: 1.67 / 8 # The reference node sees a cap of unit_capacitance * 1.67 / 8 per bit on average
+      cap_f_per_m2: None
+
+    subcomponents:
+    - name: c2c_multiplier # Inherit all necessary attributes from this compound component
+      class: c2c_multiplier
+      attributes:
+        resolution: resolution
+        voltage: voltage
+        unit_capacitance: unit_capacitance
+        a_hist: a_hist
+        b_bit_distribution: b_bit_distribution
+        ref_node_equivalent_capacitance_scale: ref_node_equivalent_capacitance_scale
+        cap_f_per_m2: cap_f_per_m2
+      area_scale: 0 # Assuming that the A input is also used, we don't need to count area twice
+
+    actions:
+    - {name: write, subcomponents: []}
+    - {name: update, subcomponents: []}
+    - {name: read, subcomponents: [{name: c2c_multiplier, actions: [name: switch_b]}]}
+    - {name: leak, subcomponents: []}

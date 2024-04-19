@@ -1,0 +1,50 @@
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  - name: zero_comparator
+    attributes:
+      n_comparators: "must_specify"
+      n_bits: "must_specify"
+      n_flags_store: "must_specify"
+      include_n_zeros_counter: True
+      technology: "must_specify"
+      dynamic_energy_scale: 1
+      leakage_energy_scale: 1
+
+    subcomponents:
+    - name: comparator
+      class: aladdin_comparator
+      attributes:
+        datawidth: n_bits
+        technology: technology
+        n_instances: n_comparators
+
+    - name: flip_flop
+      class: flip_flop
+      attributes:
+        n_bits: 1
+        technology: technology
+        n_instances: n_flags_store
+
+    - name: zeros_counter
+      class: aladdin_counter
+      attributes:
+        n_bits: ceil(log2(n_flags_store))
+        n_instances: 1
+        technology: technology
+      area_scale: include_n_zeros_counter
+
+    actions:
+    - {name: write, subcomponents: []}
+    - {name: update, subcomponents: []}
+    - {name: read, subcomponents: []}
+    - name: leak
+      subcomponents:
+      - {name: "comparator", actions: [{name: leak, energy_scale: leakage_energy_scale}]}
+      - {name: "flip_flop", actions: [{name: leak, energy_scale: leakage_energy_scale}]}
+      - {name: zeros_counter, actions: [{name: leak, energy_scale: include_n_zeros_counter * 0.5 * leakage_energy_scale}]}
+    - name: read
+      subcomponents:
+      - {name: "comparator", actions: [{name: read, energy_scale: dynamic_energy_scale}]}
+      - {name: "flip_flop", actions: [{name: read, energy_scale: dynamic_energy_scale}]}
+      - {name: zeros_counter, actions: [{name: read, energy_scale: include_n_zeros_counter * 0.5 * dynamic_energy_scale}]}

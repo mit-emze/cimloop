@@ -1,0 +1,4 @@
+globals_albireo:
+  version: 0.4
+  environment_variables:
+    ACCELERGY_COMPONENT_LIBRARIES_ALBIREO: "{{find_path('albireo_components')}}"

@@ -1,0 +1,127 @@
+{{include_text('defines.yaml')}}
+
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  # ===========================================================================
+  # CiM row drivers. These drive array rows for reading.
+  # ===========================================================================
+  - name: input_row_drivers
+    attributes: {<<: *cim_component_attributes_compound_component}
+
+    subcomponents:
+    # Row drivers
+    - name: array_row_drivers
+      class: array_row_drivers
+      attributes: {<<: *cim_component_attributes_compound_component_subcomponent}
+      area_scale: ROW_COL_DRIVERS_AREA_SCALE
+
+    actions:
+    - name: read # Read action processes a value
+      subcomponents: [{name: array_row_drivers, actions: [{name: read}]}]
+    - name: leak
+      subcomponents: [{name: array_row_drivers, actions: [{name: leak}]}]
+    - {name: write, subcomponents: []} # Unused
+    - {name: update, subcomponents: []} # Unused
+
+  # ===========================================================================
+  # CiM write drivers. These drive array rows for writing
+  # ===========================================================================
+  - name: weight_row_drivers
+    attributes: {<<: *cim_component_attributes_compound_component}
+    subcomponents:
+    # Row drivers
+    - name: array_row_drivers
+      class: array_row_drivers
+      attributes: {<<: *cim_component_attributes_compound_component_subcomponent}
+      area_scale: ROW_COL_DRIVERS_AREA_SCALE
+      # area_scale: 0 # Area already taken into account in the row drivers
+
+    actions:
+    - name: read # Read action processes a value
+      subcomponents: [{name: array_row_drivers, actions: [{name: write}]}]
+    - {name: write, subcomponents: []} # Unused
+    - name: leak
+      subcomponents:
+      - {name: array_row_drivers, actions: [{name: leak}]}
+    - {name: update, subcomponents: []} # Unused
+
+  # ===========================================================================
+  # CiM cell. This is a single memory device used for computation.
+  # ===========================================================================
+  - name: cell
+    attributes: 
+      <<: *cim_component_attributes_compound_component
+      width_cells: "must_specify"
+      depth_cells: "must_specify"
+    subcomponents:
+    - name: cell
+      class: memory_cell
+      attributes:
+        <<: *cim_component_attributes_compound_component_subcomponent
+        adc_resolution: 0
+      area_scale: width_cells * depth_cells
+    actions:
+    - name: read
+      subcomponents:
+      - {name: cell, actions: [{name: read, energy_scale: width_cells}]}
+    - name: write
+      subcomponents:
+      - {name: cell, actions: [{name: write, energy_scale: width_cells}]}
+    - name: leak
+      subcomponents:
+      - {name: cell, actions: [{name: leak, energy_scale: width_cells * depth_cells}]}
+    - {name: update, subcomponents: []} # Unused
+
+  # ===========================================================================
+  # ADC for reading analog values from the array
+  # ===========================================================================
+  - name: adc
+    attributes:
+      <<: *cim_component_attributes_compound_component
+      resolution: "must_specify"
+      n_adcs: "must_specify"
+      adc_estimator_plug_in: None
+      cell_config: None # Not a "must_specify" because the adc can use the ADC plug-in
+
+    subcomponents:
+    - name: adc
+      class: array_adc
+      attributes: 
+        <<: *cim_component_attributes_compound_component_subcomponent
+        n_adcs: n_adcs
+        adc_resolution: resolution  # Both here in case plug-ins have different vocab
+        resolution: resolution      # Both here in case plug-ins have different vocab
+        throughput: 1 / cycle_seconds * cols_active_at_once
+        plug_in: adc_estimator_plug_in
+      area_scale: adc_area_scale
+
+    actions:
+    - name: read # Read action processes a value
+      subcomponents:
+      - {name: adc, actions: [{name: read, energy_scale: adc_energy_scale}]}
+    - name: leak
+      subcomponents:
+      - {name: adc, actions: [{name: leak}]}
+    - {name: write, subcomponents: []} # Unused
+    - {name: update, subcomponents: []} # Unused
+
+  # ===========================================================================
+  # Column drivers. These drive array columns for reading.
+  # ===========================================================================
+  - name: column_drivers
+    attributes: {<<: *cim_component_attributes_compound_component}
+
+    subcomponents:
+    - name: array_column_drivers
+      class: array_col_drivers
+      attributes: {<<: *cim_component_attributes_compound_component_subcomponent}
+      area_scale: ROW_COL_DRIVERS_AREA_SCALE
+
+    actions:
+    - name: read # Read action processes a value
+      subcomponents: [{name: array_column_drivers, actions: [{name: read}]}]
+    - name: leak
+      subcomponents: [{name: array_column_drivers, actions: [{name: leak}]}]
+    - {name: write, subcomponents: []} # Unused
+    - {name: update, subcomponents: []} # Unused

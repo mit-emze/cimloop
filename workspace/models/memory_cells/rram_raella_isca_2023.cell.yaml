@@ -1,0 +1,69 @@
+# -----------------------------------------------------------------------------
+# Device type and top-level parameters
+
+# Device type
+-MemCellType: SRAM  # SRAM or RRAM
+# -ReadMode: current  # Comment this line for voltage
+-DeviceRoadmap -1LP 1HP 2LSTP:  2
+
+# Device size
+-CellArea (F^2):  5.49011611938
+-CellAspectRatio: 1 # Width/Height
+
+# Calibration parameters
+-CellReadLeakEnergyMultiplier: 1
+-CellWriteEnergyMultiplier: 1
+-CellCapacitanceMultiplier: 1
+-CellCapacitanceAdjust (F): 0.0e-15 # Capacitance = (Nominal Capacitance) * Multiplier + Adjust
+
+# Used for RRAM with access transistors or SRAM
+-AccessCMOSWidth (F): 4
+
+# Affects NeuroSim-realized ADCs. NOTE: Most models use ADC plug-in ADCs and
+# this has little to no effect.
+-ReadMode: voltage # voltage or current
+
+# -----------------------------------------------------------------------------
+# SRAM-only parameters
+# SRAM configuration. Only used if MemCellType is SRAM
+-SRAMCellNMOSWidth (F): 2
+-SRAMCellPMOSWidth (F): 2
+-MinSenseVoltage (mV): 20
+
+# -----------------------------------------------------------------------------
+# RRAM-only parameters
+# RRAM configuration. Only used if MemCellType is RRAM
+-ResistanceOn (ohm): 1333
+-ResistanceOff (ohm): 20000
+# WARNING: ON resistance is set lower than it actually is in-array.
+# This is because NeuroSim adds ~640 ohms of wire resistance on average,
+# but RAELLA's 2T2R add/subtract is very local and doesn't have this wire
+# resistance. So we pre-subtract the wire resistance here to get our 1333-ohm
+# resistance.
+
+# Set parameters
+-SetVoltage (V): 2 # From PRIME
+-SetPulse (ns): 40
+# -SetCurrent (uA): 400 # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -SetEnergy (pJ): 8  # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -SetPower (uW): 800   # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+
+# Read parameters
+-ReadVoltage (V): 0.2 # From PRIME
+-ReadPulse (ns): 1
+# -ReadCurrent (uA): 40 # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -ReadEnergy (pJ): 0.008  # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+# -ReadPower (uW): 8   # OVERWRITES PREVIOUS LINES IF UNCOMMENTED
+
+# Access transistor parameters
+-AccessType: CMOS   # Comment this line for no access transistor
+-AccessTransistorResistance (ohm): 1000
+-AccessVoltage (V): 0.1 # Access transistor voltage
+
+# -----------------------------------------------------------------------------
+# Other parameters that can be set via cell component attributes:
+
+# "voltage" is the global supply voltage
+# "threshold_voltage" is the global threshold voltage
+# "technology" is the technology node
+# "read_pulse_width" is the read pulse width

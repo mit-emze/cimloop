@@ -1,0 +1,39 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Tile top-level
+    name: tile
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # Input buffer
+    name: input_buffer
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes:
+      n_macros: macro_in_tile.spatial.meshX * macro_in_tile.spatial.meshY
+      width: n_macros * SUPPORTED_INPUT_BITS
+      depth: ARRAY_PARALLEL_INPUTS * SUPPORTED_INPUT_BITS * n_macros // width
+      multiple_buffering: 1 / CIM_UNIT_DEPTH_CELLS
+    constraints: {dataspace: {keep_only: [Inputs]}, temporal: {factors_only: []}}
+    enabled: True
+
+  - !Component # Output buffer
+    name: output_buffer
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes:
+      n_macros: macro_in_tile.spatial.meshX * macro_in_tile.spatial.meshY
+      width: n_macros * SUPPORTED_OUTPUT_BITS
+      depth: ARRAY_PARALLEL_OUTPUTS * SUPPORTED_OUTPUT_BITS * n_macros // width
+      multiple_buffering: 1 / CIM_UNIT_DEPTH_CELLS
+    constraints: {dataspace: {keep_only: [Outputs]}, temporal: {factors_only: []}}
+    enabled: True
+
+  - !Container # Macro
+    name: macro_in_tile # long name so it doesn't conflict with other names
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 8}

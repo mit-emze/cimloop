@@ -1,0 +1,32 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Top-level system
+    name: system
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Container # Chip
+    name: chip_in_system # long name so it doesn't conflict with other names
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 1}
+
+  - !Component # Chip: data that makes it here is residing in other tiles
+    name: chip2chip_link
+    <<<: [*component_defaults]
+    subclass: isaac_chip2chip_link
+    attributes: {depth: INF, width: 128}
+    constraints: 
+      dataspace: {keep_only: [Inputs, Outputs]}
+      temporal: 
+        factors: [P=-1, Q=-1, N=-1] # Weight-stationary
+        permutation: [X, Y, Z, Q, P, N, G, C, M, R, S] # Weight-stationary
+
+  - !Component # Stage & coalesce data from chip2chip link
+    name: chip2chip_data_staging
+    <<<: [*component_defaults]
+    attributes: {depth: INF, width: 128}
+    constraints: {dataspace: {keep_only: [Inputs, Outputs]}, temporal: {factors_only: []}}

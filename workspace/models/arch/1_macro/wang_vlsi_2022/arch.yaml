@@ -1,0 +1,111 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # DAC converts digital inputs to analog voltages
+    name: dac
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: dac_r2r_ladder_compound
+    attributes:
+      <<: *cim_component_attributes
+      width: INPUT_BITS_PER_SLICE
+      resolution: DAC_RESOLUTION
+      unit_resistance: DAC_UNIT_RESISTANCE
+      type: "r2r"
+      zero_between_values: 0
+      bit_distribution: INPUT_BIT_DISTRIBUTION
+
+      # This macro uses 2x R2R ladders, one for positive and one for
+      # negative values. Each is connected to VDD/2. So we'll have each
+      # input processed with two DACs & a half-scale voltage.
+      hist: hist_to_magnitude(INPUTS_HIST)
+      voltage: VOLTAGE / 2
+      n_instances: ARRAY_PARALLEL_INPUTS * 2
+      scale_active_energy_by: 2
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: {width: DAC_RESOLUTION, <<: *cim_component_attributes}
+
+  - !Component # Weight drivers write weights to the array
+    name: weight_drivers
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: weight_row_drivers
+    attributes: {width: ARRAY_BITLINES, <<: [*cim_component_attributes, *weight_drivers_attributes]}
+
+  - !Component # Select different sets of weights each timestep
+    name: select_wordline_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: 
+      width: DAC_RESOLUTION
+      average_input_value: 1
+      <<: *cim_component_attributes
+
+  - !Component # Column readout (ADC)
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes: {<<<: *cim_component_attributes}
+  - !Component # Column drivers
+    name: column_drivers
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: column_drivers
+    attributes: {<<<: *cim_component_attributes}
+
+  - !ArrayContainer # Each column of sub banks stores a different weight slice. Columns share inputs.
+    name: column_of_sub_banks
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: 16}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column_of_sub_banks.get_fanout()))]}}
+
+  - !Component # Column bandwidth limiter to limit write speed (only one value can be written per column per cycle)
+    name: column_bandwidth_limiter
+    <<<: [*component_defaults, *keep_weights, *keep_outputs, *no_coalesce]
+    attributes:
+      read_bandwidth:  1
+      per_dataspace_bandwidth_consumption_scale:
+        # Digital clock runs at 2x analog clock
+        Weights: 1 / 2 / WEIGHT_BITS_PER_SLICE
+        Outputs: 1 / ENCODED_OUTPUT_BITS
+
+  - !ArrayContainer # Each sub-bank receives a different input slice. Sub-banks share outputs.
+    name: sub_bank
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: 64}
+    max_utilization: {spatial: {factors: [('C=' + str(sub_bank.get_fanout()))]}}
+    constraints: {spatial: {maximize_dims: [[R, S, C]]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+
+  - !Component # Digital port of the C-2C multiplier. Weights enter here.
+    name: c2c_multiplier_digital_port
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: c2c_mult_input_port_a
+    attributes: &c2c_params
+      width:                DAC_RESOLUTION
+      depth:                INF
+      resolution:           CIM_UNIT_WIDTH_CELLS
+      a_hist:               INPUTS_HIST
+      b_bit_distribution:   WEIGHT_BIT_DISTRIBUTION
+      voltage:              VOLTAGE
+      unit_capacitance: 2e-15
+
+  - !Component # Analog port of the C-2C multiplier. Inputs enter here.
+    name: c2c_multiplier_analog_port
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: c2c_mult_input_port_b
+    attributes: *c2c_params
+    area_scale: 0 # Already accounted for area in c2c_mult_input_port_a
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

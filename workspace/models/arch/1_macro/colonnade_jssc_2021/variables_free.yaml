@@ -1,0 +1,59 @@
+# These variables pertain to various design choices. They do not need to be
+# matched while comparing architectures.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Set by CiM Processor
+  # ===========================================================================
+  ARRAY_WORDLINES:        Should have been set by ArrayProcessor.
+  ARRAY_BITLINES:         Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_INPUTS:  Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_OUTPUTS: Should have been set by ArrayProcessor.
+  ARRAY_PARALLEL_WEIGHTS: Should have been set by ArrayProcessor.
+
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  ENCODED_INPUT_BITS:  INPUT_BITS
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS + ceil(log2(ARRAY_WORDLINES))
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS
+
+  INPUT_ENCODING_FUNC: offset_encode_hist
+  WEIGHT_ENCODING_FUNC: offset_encode_hist
+
+  # ===========================================================================
+  # Architecture & CiM Array Structure
+  # ===========================================================================
+  CIM_UNIT_WIDTH_CELLS:  1
+  CIM_UNIT_DEPTH_CELLS:  1
+  BITS_PER_CELL:         1
+
+  # ===========================================================================
+  # Data Converters
+  # ===========================================================================
+  ADC_RESOLUTION: 1
+  VOLTAGE_DAC_RESOLUTION: 1
+  TEMPORAL_DAC_RESOLUTION: 1
+  DAC_RESOLUTION: max(VOLTAGE_DAC_RESOLUTION, TEMPORAL_DAC_RESOLUTION)
+
+  # ===========================================================================
+  # Hardware
+  # ===========================================================================
+  N_REGS_PER_COL: 16
+  N_ROWS_PER_REG: 8
+
+  # The fabricated Colonnade chip uses 100MHz clock (limited by 100MHz test
+  # bench) and is bit-pipelined. By default, we have the clock NOT fixed at
+  # 100MHz because simulated results from the paper show that it can go much
+  # faster, and speed depends on the number of regs, rows per reg, and the
+  # number of weight bits.
+  FORCE_100MHZ: False
+  BIT_PIPELINED: True
+  N_ADDERS_CRITICAL_PATH: ENCODED_WEIGHT_BITS + N_ROWS_PER_REG + 2 # Count reg as 2 adders
+  CRITICAL_PATH_LATENCY: N_ADDERS_CRITICAL_PATH * 0.4e-9
+
+  BASE_LATENCY: 10e-9 if FORCE_100MHZ else CRITICAL_PATH_LATENCY # ns per cycle
+  LATENCY_PIPELINE_SCALE: 1 if BIT_PIPELINED else (N_REGS_PER_COL + 1)
+
+  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * VOLTAGE_LATENCY_SCALE * LATENCY_PIPELINE_SCALE
+  READ_PULSE_WIDTH: GLOBAL_CYCLE_SECONDS

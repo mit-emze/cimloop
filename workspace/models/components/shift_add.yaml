@@ -1,0 +1,32 @@
+compound_components:
+  version: 0.4         # REQUIRED version number
+  classes:
+  - name: shift_add_unit
+    attributes:
+      technology: "must_specify"
+      n_bits: "must_specify" # Adder
+      shift_register_n_bits: "must_specify" # Shifter
+      cycle_seconds: "must_specify"
+
+    subcomponents:
+    # Shift and add circuit to add together output
+    - name: shift_add
+      class: shift_add
+      attributes:
+        n_bits: n_bits # Adder
+        shift_register_n_bits: shift_register_n_bits # Shifter
+        width: shift_register_n_bits # For interfacing with library
+        cycle_seconds: cycle_seconds
+
+    actions:
+    # Read action processes a value
+    - &read_action
+      name: read
+      subcomponents: [{name: shift_add, actions: [{name: shift_add}]}]
+    - {name: shift_add, <<: *read_action} # Alias
+    - {name: write, subcomponents: {}}
+    - name: leak
+      subcomponents: 
+      - name: shift_add
+        actions: [{name: leak}]
+    - {name: update, subcomponents: []}
