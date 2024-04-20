@@ -9,3 +9,14 @@
 *.swn
 *.vscode/
 *.pyc
+*.bashrc
+*-checkpoint.ipynb
+workspace/.profile
+workspace/.cache
+workspace/.config
+workspace/.ipython
+workspace/.ipython
+workspace/.jupyter
+workspace/.jupyter
+workspace/.local
+workspace/.local
