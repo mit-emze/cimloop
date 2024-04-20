@@ -170,7 +170,6 @@ def test_explore_architectures(dnn_name: str):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=l,
             variables=dict(
                 SCALING=f'"{s}"',
@@ -261,7 +260,6 @@ def test_full_dnn(dnn_name: str):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=l,
             variables=dict(
                 BATCH_SIZE=n,
@@ -321,7 +319,6 @@ def test_explore_main_memory(dnn_name: str):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=l,
             variables=dict(
                 BATCH_SIZE=n,

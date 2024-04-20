@@ -221,7 +221,6 @@ def test_full_system_dnn(dnn_name: str, batch_size: int = None):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=l,
             variables=dict(EXPERIMENT_NAME=s),
             tile="input_output_bufs",

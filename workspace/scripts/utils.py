@@ -222,10 +222,10 @@ def get_test(
 
 def run_layer(
     macro: str,
-    iso: str,
     layer: str,
     variables: dict = None,
     callfunc: Callable = None,
+    iso: str = None,
     tile=None,
     chip=None,
     system="ws_dummy_buffer_many_macro",

@@ -276,7 +276,6 @@ def test_array_size_dnn(dnn_name: str):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=l,
             variables=dict(
                 OUTPUT_BITS=10,

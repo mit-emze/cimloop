@@ -223,7 +223,6 @@ def test_column_folding_dnn(dnn_name: str = "resnet18"):
     results = utl.parallel_test(
         utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
-            iso=MACRO_NAME,
             layer=p,
             variables=dict(
                 N_FOLDED_COLUMNS=x,
