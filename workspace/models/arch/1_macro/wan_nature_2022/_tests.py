@@ -116,7 +116,7 @@ def test_energy_bits_scaling():
 
     """
 
-    EXPECTED = {  # pJ for full array activation
+    EXPECTED = {  # fJ/MAC
         (3, 1, 0): (8.99015248, 10.6186848, 3.446220545),
         (4, 2, 0): (8.270951256, 12.38674172, 3.955661604),
         (5, 3, 0): (15.46307324, 20.11826462, 7.73153662),
@@ -138,7 +138,7 @@ def test_energy_bits_scaling():
         )
         for k in EXPECTED
     )
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "shift_add",
             "adc",
@@ -148,14 +148,14 @@ def test_energy_bits_scaling():
         ],
         "Neuron ops. and control (1.8V)",
     )
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "row_drivers",
             "cim_unit",
         ],
         "Input pulses (Vread=0.5V)",
     )
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "wordline_drivers",
             "wordline_cap",
@@ -165,10 +165,18 @@ def test_energy_bits_scaling():
     results.clear_zero_energies()
     for e, r in zip(EXPECTED.values(), results):
         # Scale to fJ/MAC
-        r.energy = {k: v * 1000 / OPS_PER_ARRAY for k, v in r.energy.items()}
-        r.add_compare_ref_energy("WL Switching (0.9V <-> 2.2V)", e[0])
-        r.add_compare_ref_energy("Neuron ops. and control (1.8V)", e[1])
-        r.add_compare_ref_energy("Input pulses (Vread=0.5V)", e[2])
+        # r.per_component_energy = {
+        #     k: v / OPS_PER_ARRAY for k, v in r.per_component_energy.items()
+        # }
+        r.add_compare_ref_energy(
+            "WL Switching (0.9V <-> 2.2V)", e[0] * OPS_PER_ARRAY / 1e15
+        )
+        r.add_compare_ref_energy(
+            "Neuron ops. and control (1.8V)", e[1] * OPS_PER_ARRAY / 1e15
+        )
+        r.add_compare_ref_energy(
+            "Input pulses (Vread=0.5V)", e[2] * OPS_PER_ARRAY / 1e15
+        )
 
     return results
 
@@ -190,7 +198,7 @@ def test_area_breakdown():
     """
     results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
 
-    results.consolidate_area(
+    results.combine_per_component_area(
         [
             "shift_add",
             "adc",
@@ -199,7 +207,7 @@ def test_area_breakdown():
         ],
         "Neurons",
     )
-    results.consolidate_area(
+    results.combine_per_component_area(
         [
             "wordline_drivers",
             # 'wordline_cap', # Zero area
@@ -208,16 +216,16 @@ def test_area_breakdown():
         ],
         "Array drivers",
     )
-    results.consolidate_area(
+    results.combine_per_component_area(
         [
             "cim_unit",
         ],
         "RRAMs",
     )
-    AREA_TOTAL = 1270 * 256 / 0.28
-    results.add_compare_ref_area("Neurons", AREA_TOTAL * 0.28)
-    results.add_compare_ref_area("Array drivers", AREA_TOTAL * 0.21)
-    results.add_compare_ref_area("RRAMs", AREA_TOTAL * 0.12)
+    area = 1270 * 256 / 0.28
+    results.add_compare_ref_area("Neurons", area * 0.28 * 1e-12)
+    results.add_compare_ref_area("Array drivers", area * 0.21 * 1e-12)
+    results.add_compare_ref_area("RRAMs", area * 0.12 * 1e-12)
     results.clear_zero_areas()
     return results
 
@@ -290,7 +298,7 @@ def test_array_size_dnn(dnn_name: str):
         for x in [64, 128, 256, 512, 1024, 2048]
     )
 
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "shift_add",
             "adc",
@@ -299,14 +307,14 @@ def test_array_size_dnn(dnn_name: str):
         ],
         "ADC and Output Processing",
     )
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "row_drivers",
             "cim_unit",
         ],
         "DAC and Analog MAC",
     )
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "wordline_drivers",
             "wordline_cap",

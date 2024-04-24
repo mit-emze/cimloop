@@ -48,14 +48,16 @@ def test_energy_breakdown():
             ),
         )
     )
-    results.consolidate_energy(["cim_unit", "cim_logic"], "Bitcell array")
-    results.add_compare_ref_energy("Bitcell array", 0.602 * 0.1443 * 128 * 8)
-    results.consolidate_energy(["row_drivers", "digital_logic_input_ports"], "Drivers")
-    results.add_compare_ref_energy("Drivers", 0.288 * 0.1443 * 128 * 8)
-    results.consolidate_energy(["register"], "Ctrl+Reg")
-    results.add_compare_ref_energy("Ctrl+Reg", 0.075 * 0.1443 * 128 * 8)
-    results.consolidate_energy(["column_drivers"], "BL Decoder")
-    results.add_compare_ref_energy("BL Decoder", 0.035 * 0.1443 * 128 * 8)
+    results.combine_per_component_energy(["cim_unit", "cim_logic"], "Bitcell array")
+    results.add_compare_ref_energy("Bitcell array", 0.602 * 0.1443 * 128 * 8 * 1e-12)
+    results.combine_per_component_energy(
+        ["row_drivers", "digital_logic_input_ports"], "Drivers"
+    )
+    results.add_compare_ref_energy("Drivers", 0.288 * 0.1443 * 128 * 8 * 1e-12)
+    results.combine_per_component_energy(["register"], "Ctrl+Reg")
+    results.add_compare_ref_energy("Ctrl+Reg", 0.075 * 0.1443 * 128 * 8 * 1e-12)
+    results.combine_per_component_energy(["column_drivers"], "BL Decoder")
+    results.add_compare_ref_energy("BL Decoder", 0.035 * 0.1443 * 128 * 8 * 1e-12)
     results.clear_zero_energies()
     return results
 
@@ -96,14 +98,16 @@ def test_area_breakdown():
             ),
         )
     )
-    results.consolidate_area(["cim_unit", "cim_logic"], "Bitcell array")
-    results.add_compare_ref_area("Bitcell array", 0.839 * 227200)
-    results.consolidate_area(["row_drivers", "digital_logic_input_ports"], "Drivers")
-    results.add_compare_ref_area("Drivers", 0.018 * 227200)
-    results.consolidate_area(["register"], "Ctrl+Reg")
-    results.add_compare_ref_area("Ctrl+Reg", 0.125 * 227200)
-    results.consolidate_area(["column_drivers"], "BL Decoder")
-    results.add_compare_ref_area("BL Decoder", 0.018 * 227200)
+    results.combine_per_component_area(["cim_unit", "cim_logic"], "Bitcell array")
+    results.add_compare_ref_area("Bitcell array", 0.839 * 227200e-12)
+    results.combine_per_component_area(
+        ["row_drivers", "digital_logic_input_ports"], "Drivers"
+    )
+    results.add_compare_ref_area("Drivers", 0.018 * 227200e-12)
+    results.combine_per_component_area(["register"], "Ctrl+Reg")
+    results.add_compare_ref_area("Ctrl+Reg", 0.125 * 227200e-12)
+    results.combine_per_component_area(["column_drivers"], "BL Decoder")
+    results.add_compare_ref_area("BL Decoder", 0.018 * 227200e-12)
     results.clear_zero_areas()
     return results
 
@@ -168,7 +172,7 @@ def test_energy_input_weight_bits_scaling():
     expected_flattened = [e2 for e in EXPECTED_FJ_PER_MAC.values() for e2 in e]
 
     for r, e in zip(results, expected_flattened):
-        r.add_compare_ref("total_energy", e / 1000 * r.macs)
+        r.add_compare_ref("energy", e * 1e-15 * r.computes)  # -> fJ
     return results
 
 
@@ -258,7 +262,7 @@ def test_energy_weight_bits_scaling():
 
     expected_flattened = [e2 for e in EXPECTED_FJ_PER_MAC.values() for e2 in e]
     for r, e in zip(results, expected_flattened):
-        r.add_compare_ref("total_energy", e / 1000 * r.macs)
+        r.add_compare_ref("energy", e * 1e-15 * r.computes)  # -> fJ
 
     return results
 
@@ -400,7 +404,7 @@ def test_latency_scaling():
 
     expected_flattened = [e2 for e in EXPECTED_LATENCY.values() for e2 in e]
     for r, e in zip(results, expected_flattened):
-        r.add_compare_ref("latency", e / 1e6)  # ms->ns
+        r.add_compare_ref("latency", e / 1e6)  # ->us
     return results
 
 

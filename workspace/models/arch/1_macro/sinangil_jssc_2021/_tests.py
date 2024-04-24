@@ -47,18 +47,18 @@ def test_output_value_energy_scaling():
         for x in range(16)
     )
     EXPECTED = {
-        0: 3.35660091,
-        1: 4.562974203,
-        2: 5.033383915,
-        4: 5.443095599,
-        6: 5.837632777,
-        8: 6.285280728,
-        10: 6.657056146,
-        12: 7.04400607,
-        15: 7.795144158,
+        0: 3.35660091e-12,
+        1: 4.562974203e-12,
+        2: 5.033383915e-12,
+        4: 5.443095599e-12,
+        6: 5.837632777e-12,
+        8: 6.285280728e-12,
+        10: 6.657056146e-12,
+        12: 7.04400607e-12,
+        15: 7.795144158e-12,
     }
     for i, r in enumerate(results):
-        r.add_compare_ref("total_energy", EXPECTED.get(i, None))
+        r.add_compare_ref("energy", EXPECTED.get(i, None))
 
     return results
 
@@ -95,17 +95,17 @@ def test_voltage_scaling():
         for x in range(65, 105, 5)
     )
     EXPECTED = [
-        5.109375,
-        5.875,
-        6.796875,
-        7.8125,
-        9.03125,
-        10.25,
-        11.75,
-        13.125,
+        5.109375e-12,
+        5.875e-12,
+        6.796875e-12,
+        7.8125e-12,
+        9.03125e-12,
+        10.25e-12,
+        11.75e-12,
+        13.125e-12,
     ]
     for r, e in zip(results, EXPECTED):
-        r.add_compare_ref("total_energy", e)
+        r.add_compare_ref("energy", e)
 
     return results
 
@@ -125,10 +125,10 @@ def test_area_breakdown():
     """
     results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
 
-    results.consolidate_area(["adc", "counter"], "CiM Circuitry")
-    results.add_compare_ref_area("CiM Circuitry", [1596])
+    results.combine_per_component_area(["adc", "counter"], "CiM Circuitry")
+    results.add_compare_ref_area("CiM Circuitry", [1596e-12])
 
-    results.consolidate_area(
+    results.combine_per_component_area(
         [
             "row_drivers",
             "column_drivers",
@@ -137,12 +137,12 @@ def test_area_breakdown():
         ],
         "Original Macro",
     )
-    results.add_compare_ref_area("Original Macro", [800])
+    results.add_compare_ref_area("Original Macro", [800e-12])
 
-    results.consolidate_area(
+    results.combine_per_component_area(
         ["binary_weighting_capacitors"], "Binary Weighting Capacitors"
     )
-    results.add_compare_ref_area("Binary Weighting Capacitors", [160])
+    results.add_compare_ref_area("Binary Weighting Capacitors", [160e-12])
 
     return results
 
@@ -199,7 +199,7 @@ def test_exploration():
 
     This test explores the tradeoff between the width of the CiM unit (i.e.,
     number of weight bits that are stored and processed in one slice), the
-    number of weight bits in the workload, and the throughput of the macro.
+    number of weight bits in the workload, and the compute density of the macro.
 
     In this test, we vary the CiM unit width while keeping the array size
     constant (*e.g.,* when we double the CiM unit width, it doubles the bits per
@@ -208,18 +208,18 @@ def test_exploration():
     changing the CiM unit width, the binary weighting capacitors will also be
     scaled to sum results from the bits within a weight slice.
 
-    We see that CiM units with more weight bits can increase throughput-per-area
-    for a given number of weight bits because they store more bits in each
-    slice, require fewer columns to store slices, and require less circuitry
-    (mostly ADCs) to read outputs. However, CiM units become underutilized when
-    there are fewer bits per weight than they store.
+    We see that CiM units with more weight bits can increase compute density for
+    a given number of weight bits because they store more bits in each slice,
+    require fewer columns to store slices, and require less circuitry (mostly
+    ADCs) to read outputs. However, CiM units become underutilized when there
+    are fewer bits per weight than they store.
 
     Wider CiM units also lead to a larger-area chip due to the larger binary
     weighting capacitors required to sum results from the bits within a weight
     slice. The size of the binary weighting capacitors increases exponentially
     with the number of bits per weight. For this reason, the eight-wide CiM unit
     had high area from the binary weighting capacitors, and it never had the
-    highest throughput-per-area.
+    highest compute density.
     """
     results = utl.parallel_test(
         utl.delayed(utl.quick_run)(

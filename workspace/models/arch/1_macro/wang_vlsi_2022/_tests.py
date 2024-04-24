@@ -37,13 +37,13 @@ def test_energy_breakdown():
 
     """
     results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
-    results.consolidate_energy(["adc"], "ADC")
-    results.add_compare_ref_energy("ADC", PJ_PER_MVM * 0.34)
+    results.combine_per_component_energy(["adc"], "ADC")
+    results.add_compare_ref_energy("ADC", PJ_PER_MVM * 0.34 * 1e-12)
 
-    results.consolidate_energy(["dac"], "DAC")
-    results.add_compare_ref_energy("DAC", PJ_PER_MVM * 0.22)
+    results.combine_per_component_energy(["dac"], "DAC")
+    results.add_compare_ref_energy("DAC", PJ_PER_MVM * 0.22 * 1e-12)
 
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "row_drivers",
             "select_wordline_drivers",
@@ -54,10 +54,10 @@ def test_energy_breakdown():
         ],
         "MAC",
     )
-    results.add_compare_ref_energy("MAC", PJ_PER_MVM * 0.4)
+    results.add_compare_ref_energy("MAC", PJ_PER_MVM * 0.4 * 1e-12)
 
-    results.consolidate_energy(["weight_drivers"], "Misc")
-    results.add_compare_ref_energy("Misc", PJ_PER_MVM * 0.04)
+    results.combine_per_component_energy(["weight_drivers"], "Misc")
+    results.add_compare_ref_energy("Misc", PJ_PER_MVM * 0.04 * 1e-12)
 
     return results
 
@@ -82,11 +82,11 @@ def test_area_breakdown():
 
     """
     results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
-    results.consolidate_area(["adc"], "ADC")
-    results.add_compare_ref_area("ADC", [0.13 * TOTAL_AREA])
-    results.consolidate_area(["dac"], "DAC")
-    results.add_compare_ref_area("DAC", [0.3 * TOTAL_AREA])
-    results.consolidate_area(
+    results.combine_per_component_area(["adc"], "ADC")
+    results.add_compare_ref_area("ADC", [0.13 * TOTAL_AREA * 1e-12])
+    results.combine_per_component_area(["dac"], "DAC")
+    results.add_compare_ref_area("DAC", [0.3 * TOTAL_AREA * 1e-12])
+    results.combine_per_component_area(
         [
             "select_wordline_drivers",
             "cim_unit",
@@ -96,9 +96,9 @@ def test_area_breakdown():
         ],
         "MAC",
     )
-    results.add_compare_ref_area("MAC", [0.46 * TOTAL_AREA])
-    results.consolidate_area(["weight_drivers"], "Misc")
-    results.add_compare_ref_area("Misc", [0.11 * TOTAL_AREA])
+    results.add_compare_ref_area("MAC", [0.46 * TOTAL_AREA * 1e-12])
+    results.combine_per_component_area(["weight_drivers"], "Misc")
+    results.add_compare_ref_area("Misc", [0.11 * TOTAL_AREA * 1e-12])
     return results
 
 
@@ -237,9 +237,9 @@ def test_full_system_dnn(dnn_name: str, batch_size: int = None):
     )
 
     for r in results:
-        r.energy.setdefault("main_memory", 0)
+        r.per_component_energy.setdefault("main_memory", 0)
 
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         [
             "c2c_multiplier_analog_port",
             "c2c_multiplier_digital_port",
@@ -256,8 +256,8 @@ def test_full_system_dnn(dnn_name: str, batch_size: int = None):
         ],
         "Macro & Other On-Chip Data Movement",
     )
-    results.consolidate_energy(["glb"], "Global Buffer")
-    results.consolidate_energy(["main_memory"], "Off-Chip DRAM")
+    results.combine_per_component_energy(["glb"], "Global Buffer")
+    results.combine_per_component_energy(["main_memory"], "Off-Chip DRAM")
     results.clear_zero_energies()
 
     return results

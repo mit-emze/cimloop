@@ -51,8 +51,8 @@ def test_tops():
         "bitcell_capacitor",
         "weight_drivers",
     ]
-    results.consolidate_energy(components_for_tops, "TOPS Components")
-    results.consolidate_area(components_for_tops, "TOPS Components")
+    results.combine_per_component_energy(components_for_tops, "TOPS Components")
+    results.combine_per_component_area(components_for_tops, "TOPS Components")
 
     for r, tops, tops_per_w_1b, tops_per_mm2_1b in zip(
         results,
@@ -60,8 +60,10 @@ def test_tops():
         [400, 192],  # Expected 1b TOPS/W
         [0.24, 0.6],  # Expected 1b TOPS/mm^2
     ):
-        r.tops_per_w_1b = 2 * r.macs / r.energy["TOPS Components"]
-        r.tops_per_mm2_1b = r.tops / r.area["TOPS Components"] * 1e6
+        r.tops_per_w_1b = (
+            2 * r.computes / r.per_component_energy["TOPS Components"] / 1e12
+        )
+        r.tops_per_mm2_1b = r.tops / r.per_component_area["TOPS Components"] / 1e6
 
         r.add_compare_ref("tops_1b", tops)
         r.add_compare_ref("tops_per_w_1b", tops_per_w_1b)
@@ -81,10 +83,10 @@ def test_area_breakdown():
     additional control logic that we did not model.
     """
     results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
-    results.consolidate_area(["adc"], "ADC")
-    results.add_compare_ref_area("ADC", [0.497e6])
+    results.combine_per_component_area(["adc"], "ADC")
+    results.add_compare_ref_area("ADC", [0.497e-6])
 
-    results.consolidate_area(
+    results.combine_per_component_area(
         [
             "row_drivers",
             "weight_drivers",
@@ -94,13 +96,13 @@ def test_area_breakdown():
         ],
         "CiM",
     )
-    results.add_compare_ref_area("CiM", [2.91e6])
+    results.add_compare_ref_area("CiM", [2.91e-6])
 
-    results.consolidate_area(["out_datapath", "shift_add"], "NMC Data Path")
-    results.add_compare_ref_area("NMC Data Path", [0.497e6])
+    results.combine_per_component_area(["out_datapath", "shift_add"], "NMC Data Path")
+    results.add_compare_ref_area("NMC Data Path", [0.497e-6])
 
-    results.consolidate_area(["input_zero_gating"], "Sparsity Controller")
-    results.add_compare_ref_area("Sparsity Controller", [0.392e6])
+    results.combine_per_component_area(["input_zero_gating"], "Sparsity Controller")
+    results.add_compare_ref_area("Sparsity Controller", [0.392e-6])
 
     return results
 
@@ -131,8 +133,10 @@ def test_energy_breakdown():
         for x in [0.85, 1.2]
     )
 
-    results.add_compare_ref_energy("adc", [1.79 * N_ADC_USES, 3.56 * N_ADC_USES])
-    results.consolidate_energy(
+    results.add_compare_ref_energy(
+        "adc", [1.79e-12 * N_ADC_USES, 3.56e-12 * N_ADC_USES]
+    )
+    results.combine_per_component_energy(
         [
             "row_drivers",
             "weight_drivers",
@@ -142,9 +146,11 @@ def test_energy_breakdown():
         ],
         "CiM",
     )
-    results.add_compare_ref_energy("CiM", [9.7 * N_ADC_USES, 20.4 * N_ADC_USES])
-    results.consolidate_energy(["out_datapath", "shift_add"], "NMC Data Path")
-    results.add_compare_ref_energy("NMC Data Path", [8.3 * N_OUTPUTS, 14.7 * N_OUTPUTS])
+    results.add_compare_ref_energy("CiM", [9.7e-12 * N_ADC_USES, 20.4e-12 * N_ADC_USES])
+    results.combine_per_component_energy(["out_datapath", "shift_add"], "NMC Data Path")
+    results.add_compare_ref_energy(
+        "NMC Data Path", [8.3e-12 * N_OUTPUTS, 14.7e-12 * N_OUTPUTS]
+    )
     return results
 
 
@@ -190,7 +196,7 @@ def test_tops_bits_scaling():
 
 def test_column_folding_dnn(dnn_name: str = "resnet18"):
     """
-    ### Exploration of Column Folding versus Energy Efficiency
+    ### Exploration of Inter-Column Output Reuse Versus Energy Efficiency
 
     This test explores how the macro's column folding strategy impacts the
     energy efficiency and throughput of a DNN. Column folding connects columns
@@ -235,11 +241,13 @@ def test_column_folding_dnn(dnn_name: str = "resnet18"):
         for x in range(1, 9)
     )
 
-    results.consolidate_energy(
+    results.combine_per_component_energy(
         ["adc", "column_drivers", "out_datapath", "shift_add"], "Output Processing"
     )
-    results.consolidate_energy(["row_drivers", "input_zero_gating"], "Input Processing")
-    results.consolidate_energy(["cim_unit", "bitcell_capacitor"], "Other")
+    results.combine_per_component_energy(
+        ["row_drivers", "input_zero_gating"], "Input Processing"
+    )
+    results.combine_per_component_energy(["cim_unit", "bitcell_capacitor"], "Other")
     results.clear_zero_energies()
 
     return results.aggregate_by("N_FOLDED_COLUMNS")

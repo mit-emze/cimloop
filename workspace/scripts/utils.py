@@ -14,23 +14,26 @@ from tqdm import tqdm
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(THIS_SCRIPT_DIR)
 from processors import ArrayProcessor
-from tl_output_parsing import parse_timeloop_output, TestOutput, TestOutputList
+from tl_output_parsing import parse_timeloop_output, MacroOutputStats, MacroOutputStatsList
+
 from plots import *
 # fmt: on
 
 from joblib import delayed as delayed
 
 
-def single_test(result) -> TestOutput:
-    return TestOutputList([result])
+def single_test(result) -> MacroOutputStatsList:
+    return MacroOutputStatsList([result])
 
 
-def parallel_test(delayed_calls: List[Callable], n_jobs: int = 32) -> TestOutputList:
+def parallel_test(
+    delayed_calls: List[Callable], n_jobs: int = 32
+) -> MacroOutputStatsList:
     if not isinstance(delayed_calls, Iterable):
         delayed_calls = [delayed_calls]
 
     delayed_calls = list(delayed_calls)
-    return TestOutputList(
+    return MacroOutputStatsList(
         tqdm(
             joblib.Parallel(return_as="generator", n_jobs=n_jobs)(delayed_calls),
             total=len(delayed_calls),
@@ -105,16 +108,14 @@ def get_spec(
     return spec
 
 
-def run_mapper_parse_output(
+def run_mapper(
     spec: tl.Specification,
-    name: str,
-    stats_file_write_timeout: int = 5,
     accelergy_verbose: bool = False,
 ) -> dict:
     output_dir = get_run_dir()
 
     run_prefix = f"{output_dir}/timeloop-mapper"
-    tl.call_mapper(
+    mapper_result = tl.call_mapper(
         specification=spec,
         output_dir=output_dir,
         log_to=os.path.join(output_dir, f"{run_prefix}.log"),
@@ -126,42 +127,7 @@ def run_mapper_parse_output(
             log_to=os.path.join(output_dir, "accelergy.log"),
         )
 
-    statspath = f"{run_prefix}.stats.txt"
-    art_path = f"{run_prefix}.ART.yaml"
-    if accelergy_verbose:
-        art_path = f"{output_dir}/ART_summary_verbose.yaml"
-
-    time_waited = 0
-    while not os.path.exists(statspath):
-        time.sleep(1)
-        time_waited += 1
-        err = None
-        estr = ""
-        if "Failed" in open(f"{run_prefix}.log").read():
-            err = Exception
-            estr = "Mapper failed"
-        if time_waited > stats_file_write_timeout:
-            err = TimeoutError
-            estr = f"Waited {stats_file_write_timeout} seconds for {statspath} to exist"
-        if err is not None:
-            cmd = f"tl mapper parsed-processed-input.yaml"
-            e = (
-                f"In process.thread {os.getpid()}. {estr} in {os.path.abspath(output_dir)}"
-                f". Try running: cd {os.path.abspath(output_dir)}; {cmd}"
-            )
-            raise err(e)
-
-    tl_output = parse_timeloop_output(
-        spec,
-        name,
-        statspath,
-        art_path,
-        accelergy_verbose=accelergy_verbose,
-    )
-    to_return = [tl_output]
-    if len(to_return) == 1:
-        return to_return[0]
-    return tuple(to_return)
+    return MacroOutputStats.from_output_stats(mapper_result)
 
 
 def quick_run(
@@ -180,11 +146,7 @@ def quick_run(
         if k not in variables:
             spec.variables[k] = spec.variables.pop(k)
 
-    return run_mapper_parse_output(
-        spec,
-        name=macro,
-        accelergy_verbose=accelergy_verbose,
-    )
+    return run_mapper(spec, accelergy_verbose=accelergy_verbose)
 
 
 def get_diagram(
@@ -246,10 +208,7 @@ def run_layer(
         callfunc(spec)
 
     try:
-        return run_mapper_parse_output(
-            spec=spec,
-            name=f"Layer {layer}",
-        )
+        return run_mapper(spec=spec)
     except Exception as e:
         print(f"Error processing spec with {macro}, {iso}, {layer}, {variables}")
         raise e
