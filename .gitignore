@@ -20,3 +20,4 @@ workspace/.jupyter
 workspace/.jupyter
 workspace/.local
 workspace/.local
+*-checkpoint*
