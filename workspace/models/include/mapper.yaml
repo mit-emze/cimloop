@@ -12,4 +12,4 @@ mapper:
   max_temporal_loops_in_a_mapping: 14
   diagnostics: False
 
-mapspace: {version: 0.4, template: ruby}
+mapspace: {version: 0.4, template: uber}
