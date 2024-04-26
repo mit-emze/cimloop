@@ -48,7 +48,7 @@ accelerator](workspace/models/arch/1_macro/albireo_isca_2021) as described in
 ## Documentation
 Documentation can be found at the following locations:
 
-- [CiMLoop Paper (Not yet available)]()
+- [CiMLoop Paper](CiMLoop.pdf)
 - [Timeloop+Accelergy Documentation](https://timeloop.csail.mit.edu/)
 - [Timeloop+Accelergy Exercises](https://github.com/Accelergy-Project/timeloop-accelergy-exercises)
 - [Timeloop Front-End Documentation](https://accelergy-project.github.io/timeloopfe/)
