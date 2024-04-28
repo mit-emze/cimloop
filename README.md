@@ -1,8 +1,9 @@
 # CiMLoop
 
-Welcome to the CiMLoop repository! CiMLoop (Andrulis, ISPASS 2024) is a
-full-stack CiM modeling tool with flexible user-defined systems and fast,
-accurate statistical energy modeling.
+Welcome to the repository for "CiMLoop: A Flexible, Accurate, and Fast
+Compute-In-Memory Modeling Tool" by Tanner Andrulis, Vivienne Sze, and Joel S.
+Emer. CiMLoop is a full-stack CiM modeling tool with flexible user-defined
+systems and fast, accurate statistical energy modeling.
 
 This repository contains tutorials, examples, documentation, and an artifact for
 the CiMLoop paper. All are accessible through the Docker container.
