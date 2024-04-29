@@ -13,7 +13,7 @@
 # Calibration parameters
 -CellReadLeakEnergyMultiplier: 1
 -CellWriteEnergyMultiplier: 1
--CellCapacitanceMultiplier: 1
+-CellCapacitanceMultiplier: 6.5
 -CellCapacitanceAdjust (F): 0 # Capacitance = (Nominal Capacitance) * Multiplier + Adjust
 
 # Used for RRAM with access transistors or SRAM

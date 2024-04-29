@@ -124,7 +124,7 @@ architecture:
     subclass: capacitor
     attributes:
       voltage: VOLTAGE
-      capacitance: 5e-15
+      capacitance: 2e-15
       stacked: True # Account for the area in the cell file
 
   - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
