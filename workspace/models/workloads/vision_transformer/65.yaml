@@ -6,6 +6,10 @@ problem:
   name: Linear
   dnn_name: vision_transformer
   notes: Linear
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0.00392,0.00604,0.00823,0.0104,0.0141,0.0176,0.0223,0.0274,0.0322,0.039,0.0438,0.049,0.0537,0.0584,0.068,0.0895,0.0659,0.058,0.054,0.0489,0.0446,0.0378,0.0335,0.0273,0.0229,0.0184,0.0148,0.0114,0.0082,0.00614,0.00474]
     Weights: [0.00484,0.00639,0.00873,0.012,0.0153,0.0193,0.0243,0.0295,0.0352,0.0405,0.0457,0.0508,0.0559,0.0594,0.061,0.0618,0.0604,0.0594,0.0554,0.0516,0.0462,0.0406,0.0352,0.0291,0.0244,0.0196,0.0154,0.0117,0.00892,0.0068,0.00471]

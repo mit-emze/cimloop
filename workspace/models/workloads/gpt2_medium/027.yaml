@@ -6,6 +6,10 @@ problem:
   name: GPT2Attention
   dnn_name: gpt2_medium
   notes: From einsum
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.922,0.0413,0.0132,0.00677,0.00411,0.00282,0.002,0.00162,0.00124,0.00101,0.000935,0.000761,0.000624,0.000622,0.000535,0.000476]
     Weights: [0.00325,0.00431,0.00575,0.00757,0.0105,0.0136,0.0174,0.0222,0.0294,0.0368,0.0448,0.0542,0.0636,0.0718,0.0775,0.0802,0.0773,0.0712,0.0631,0.0545,0.0446,0.0362,0.0286,0.022,0.0171,0.0129,0.00971,0.00737,0.00543,0.00396,0.00292]

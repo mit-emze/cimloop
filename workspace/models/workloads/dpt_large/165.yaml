@@ -6,6 +6,10 @@ problem:
   name: DPTViTSelfAttention
   dnn_name: dpt_large
   notes: From einsum
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0261,0.19,0.262,0.21,0.128,0.0724,0.041,0.0242,0.0153,0.01,0.00679,0.00475,0.00347,0.00252,0.00197,0.00155]
     Weights: [0.00481,0.00661,0.00906,0.0119,0.0154,0.0197,0.024,0.0292,0.0341,0.0398,0.0454,0.0501,0.0548,0.0589,0.0609,0.062,0.0615,0.0594,0.0561,0.0518,0.0472,0.0413,0.0358,0.0302,0.0249,0.0193,0.0151,0.0117,0.00855,0.00623,0.00436]

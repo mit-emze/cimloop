@@ -6,6 +6,10 @@ problem:
   name: Conv2d
   dnn_name: densenet201
   notes: Conv2d
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.633,0.0739,0.0579,0.0483,0.0402,0.0332,0.0264,0.0216,0.0169,0.0128,0.0102,0.00785,0.00634,0.00475,0.00384,0.00293]
     Weights: [0.00237,0.00294,0.00438,0.00489,0.00668,0.00889,0.0107,0.0148,0.0188,0.0227,0.0279,0.0351,0.0426,0.0523,0.072,0.352,0.0714,0.0515,0.0415,0.0334,0.027,0.0217,0.0179,0.0133,0.0113,0.00896,0.00705,0.00517,0.00404,0.00356,0.00276]

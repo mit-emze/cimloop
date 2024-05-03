@@ -6,6 +6,10 @@ problem:
   name: SelfAttention
   dnn_name: msft_phi_1_5
   notes: From einsum
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.997,0.0014,0.000307,0.000154,0.000101,8.1e-05,7.39e-05,7.43e-05,7.71e-05,8.26e-05,8.21e-05,8.69e-05,8.4e-05,8.07e-05,7.87e-05,6.19e-05]
     Weights: [0.00393,0.00531,0.00724,0.00967,0.0128,0.0165,0.0213,0.0266,0.0327,0.0395,0.0467,0.053,0.0591,0.064,0.0669,0.0688,0.0673,0.0637,0.0589,0.0529,0.0469,0.0397,0.0329,0.0268,0.0214,0.0166,0.0127,0.00968,0.00714,0.00536,0.00395]

@@ -6,6 +6,10 @@ problem:
   name: Conv1D
   dnn_name: gpt2_medium
   notes: Conv1D
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0.00182,0.00194,0.00252,0.00314,0.0041,0.00529,0.00663,0.00852,0.0114,0.0158,0.022,0.0322,0.0487,0.0845,0.155,0.204,0.152,0.083,0.0469,0.0307,0.0205,0.0146,0.0106,0.00814,0.0065,0.00507,0.00411,0.00343,0.00272,0.00227,0.00183]
     Weights: [0.00408,0.00572,0.00778,0.0108,0.0138,0.0182,0.0227,0.0285,0.0341,0.0405,0.0465,0.0525,0.0574,0.0611,0.064,0.065,0.0641,0.0613,0.0572,0.052,0.0468,0.04,0.0341,0.0283,0.0229,0.0183,0.0141,0.0105,0.00779,0.0058,0.00412]

@@ -6,6 +6,10 @@ problem:
   name: Linear
   dnn_name: msft_phi_1_5
   notes: Linear
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0.122,0.253,0.187,0.203,0.154,0.0147,0.0116,0.00948,0.00783,0.00656,0.00558,0.00474,0.00399,0.00338,0.00295,0.00255,0.00212,0.0019,0.00163,0.00137]
     Weights: [0.00417,0.00562,0.0077,0.0103,0.0136,0.0174,0.0223,0.0278,0.0336,0.0401,0.0467,0.0527,0.058,0.0622,0.0649,0.0658,0.065,0.0622,0.058,0.0526,0.0467,0.0402,0.0336,0.0278,0.0223,0.0174,0.0135,0.0103,0.00765,0.00565,0.00415]

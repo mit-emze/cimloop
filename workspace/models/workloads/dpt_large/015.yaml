@@ -6,6 +6,10 @@ problem:
   name: Linear
   dnn_name: dpt_large
   notes: Linear
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0.003,0.00406,0.00539,0.00709,0.00915,0.0126,0.0161,0.0219,0.0304,0.0394,0.0441,0.0511,0.0586,0.0642,0.0706,0.0793,0.0713,0.0683,0.0624,0.0563,0.051,0.046,0.0347,0.0263,0.0201,0.015,0.0108,0.0078,0.00575,0.0043,0.00302]
     Weights: [0.00477,0.00645,0.00844,0.0107,0.0133,0.0164,0.0207,0.0256,0.0319,0.0389,0.047,0.0554,0.0639,0.0711,0.0755,0.076,0.0729,0.0666,0.0586,0.0496,0.0416,0.034,0.0272,0.0215,0.0168,0.0129,0.01,0.00785,0.00606,0.0047,0.00362]

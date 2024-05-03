@@ -6,6 +6,10 @@ problem:
   name: Linear
   dnn_name: mobilenet_v3
   notes: Linear
+  # These histograms symmetric and zero-centered (the centermost bin is the
+  # probability of zero). Histograms are normalized to sum to 1.0 and they have
+  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
+  # as needed to match the bitwidth of the corresponding operands.
   histograms:
     Inputs:  [0,0,0,0,0,0,0,0,0,0,0,0.215,0.189,0.121,0.0718,0.108,0.0481,0.0458,0.0379,0.0308,0.0237,0.0205,0.03,0.0142,0.00868,0.00789,0.00789,0.00631,0.00552,0.00552,0.00237]
     Weights: [0.0041,0.00604,0.00854,0.0118,0.0158,0.0207,0.0263,0.032,0.038,0.0437,0.049,0.0533,0.056,0.0577,0.0588,0.0584,0.0571,0.0548,0.0521,0.0487,0.0444,0.0401,0.0354,0.0302,0.0255,0.021,0.0165,0.0127,0.00965,0.00693,0.00475]
