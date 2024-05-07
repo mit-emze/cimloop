@@ -8,8 +8,10 @@ problem:
   notes: Conv2d
   # These histograms symmetric and zero-centered (the centermost bin is the
   # probability of zero). Histograms are normalized to sum to 1.0 and they have
-  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
-  # as needed to match the bitwidth of the corresponding operands.
+  # 2^N-1 bins for some integer N. Higher N yields higher-fidelity histograms,
+  # but also increases runtime & the size of YAML files. Encoding functions will
+  # upsample or downsample histograms depending on the bitwidth of the
+  # corresponding operands.
   histograms:
     Inputs:  [0.00259,0.00304,0.00388,0.00634,0.00871,0.0114,0.0158,0.0215,0.026,0.0371,0.0395,0.0513,0.0615,0.0699,0.0733,0.0799,0.0797,0.0758,0.071,0.061,0.0479,0.0394,0.0296,0.0232,0.0168,0.0129,0.0101,0.00709,0.00625,0.00405,0.00327]
     Weights: [0.00318,0.00551,0.00573,0.00976,0.0102,0.0163,0.0212,0.0248,0.0316,0.0367,0.0416,0.0532,0.0626,0.0664,0.0702,0.0778,0.0791,0.0698,0.0604,0.0509,0.0456,0.0388,0.0301,0.0235,0.018,0.0136,0.00976,0.00785,0.00573,0.00551,0.00445]

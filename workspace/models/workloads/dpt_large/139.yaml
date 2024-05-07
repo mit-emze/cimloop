@@ -8,8 +8,10 @@ problem:
   notes: Linear
   # These histograms symmetric and zero-centered (the centermost bin is the
   # probability of zero). Histograms are normalized to sum to 1.0 and they have
-  # 2^N-1 bins for some N. Encoding functions will upsample or downsample them
-  # as needed to match the bitwidth of the corresponding operands.
+  # 2^N-1 bins for some integer N. Higher N yields higher-fidelity histograms,
+  # but also increases runtime & the size of YAML files. Encoding functions will
+  # upsample or downsample histograms depending on the bitwidth of the
+  # corresponding operands.
   histograms:
     Inputs:  [0.00423,0.00593,0.00794,0.011,0.014,0.0182,0.0225,0.0286,0.0341,0.0408,0.0463,0.0517,0.0577,0.061,0.0635,0.0655,0.0642,0.0603,0.057,0.0514,0.0456,0.0405,0.034,0.0284,0.0231,0.0186,0.0146,0.0107,0.0084,0.00599,0.00436]
     Weights: [0.00479,0.00657,0.00886,0.0119,0.0154,0.0194,0.0241,0.0292,0.0344,0.0401,0.0458,0.051,0.0559,0.059,0.0616,0.0632,0.0623,0.0593,0.0562,0.0509,0.0455,0.04,0.0342,0.0294,0.0241,0.0194,0.0154,0.0116,0.00909,0.00651,0.00494]
