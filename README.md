@@ -1,4 +1,4 @@
-# CiMLoop
+# CiMLoop (Timeloop+Accelergy v4)
 
 Welcome to the repository for "CiMLoop: A Flexible, Accurate, and Fast
 Compute-In-Memory Modeling Tool" by Tanner Andrulis, Vivienne Sze, and Joel S.
