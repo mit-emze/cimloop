@@ -16,7 +16,10 @@ are on the way!**
 ```bash
 git clone https://github.com/mit-emze/cimloop.git
 cd cimloop
-export DOCKER_ARCH=<your processor architecture. supported: amd64, arm64>
+export DOCKER_ARCH=<your processor architecture. supported: amd64>
+# arm64 is also supported, BUT IS NOT STABLE. Use at your own risk.
+# It is recommended to build Timeloop and Accelergy from source if you're
+# using an ARM machine.
 docker-compose pull
 docker-compose up
 # Connect to the container and explore CiMLoop! The README.md file
