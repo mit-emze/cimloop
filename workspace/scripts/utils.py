@@ -134,11 +134,13 @@ def quick_run(
     macro: str,
     variables: dict = None,
     accelergy_verbose: bool = False,
+    **kwargs,
 ):
     spec = get_spec(
         macro=macro,
         system="ws_dummy_buffer_one_macro",
         max_utilization=True,
+        **kwargs,
     )
     variables = variables or {}
     spec.variables.update(variables)
@@ -154,11 +156,13 @@ def get_diagram(
     container_names: Union[str, List[str]] = (),
     ignore: List[str] = (),
     variables: dict = None,
+    **kwargs,
 ):
     spec = get_spec(
         macro=macro,
         system="ws_dummy_buffer_one_macro",
         max_utilization=True,
+        **kwargs,
     )
     spec.variables.update(variables or {})
     return spec.to_diagram(container_names, ignore)
