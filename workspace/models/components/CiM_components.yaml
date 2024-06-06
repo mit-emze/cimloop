@@ -83,6 +83,7 @@ compound_components:
       n_adcs: "must_specify"
       adc_estimator_plug_in: None
       cell_config: None # Not a "must_specify" because the adc can use the ADC plug-in
+      throughput_scale: 1
 
     subcomponents:
     - name: adc
@@ -92,7 +93,7 @@ compound_components:
         n_adcs: n_adcs
         adc_resolution: resolution  # Both here in case plug-ins have different vocab
         resolution: resolution      # Both here in case plug-ins have different vocab
-        throughput: 1 / cycle_seconds * cols_active_at_once
+        throughput: 1 / cycle_seconds * cols_active_at_once * throughput_scale
         plug_in: adc_estimator_plug_in
       area_scale: adc_area_scale
 

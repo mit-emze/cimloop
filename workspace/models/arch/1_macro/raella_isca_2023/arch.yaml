@@ -1,0 +1,121 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # Output center+offset correct to decode center+offset output values
+    name: output_center_offset_correct
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: raella_output_center_offset_correct
+    attributes: 
+      width: OUTPUT_BITS
+      center_entries: ARRAY_PARALLEL_OUTPUTS
+
+  - !Component # Input buffer
+    name: input_buffer
+    <<<: [*component_defaults]
+    subclass: raella_input_buffer
+    attributes:
+      # Signed inputs are padded BELOW 
+      width: 32 * (2 if SIGNED_INPUTS else 1)
+      real_width: 32
+      depth: array.spatial.meshX * SUPPORTED_INPUT_BITS * ARRAY_PARALLEL_INPUTS // width
+      adc_energy_scale: SPECULATION_ADC_ENERGY_SCALE
+      input_bits: SUPPORTED_INPUT_BITS
+    constraints:
+      dataspace: {keep: [Inputs], bypass: [Outputs, Weights]}
+
+  - !Container # array: Independent array with memory elements and peripherals.
+    name: array
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    spatial: {meshX: 4}
+    max_utilization: {spatial: {factors: [('C=' + str(array.get_fanout()))]}}
+
+  - !Component # Output register holds outputs in progress
+    name: output_register
+    <<<: [*component_defaults]
+    subclass: raella_output_register
+    attributes:
+      entry_bits: SUPPORTED_OUTPUT_BITS * 2
+      width: entry_bits * N_ADC_PER_BANK * 2
+      n_entries: ARRAY_PARALLEL_OUTPUTS
+      depth: entry_bits * n_entries // width # depth=Capacity/width
+      datawidth: 2 # Accumulate in 16b registers instead of 8b. 2x datawidth 
+      speculation_adc_scale: SPECULATION_ADC_ENERGY_SCALE
+      n_flags: ARRAY_PARALLEL_OUTPUTS
+    constraints:
+      dataspace: {keep_only: [Outputs]}
+      temporal: {factors_only: [X=0], factors: []} # 0 = all
+
+  - !Component # Shift+add sums outputs from multiple slices
+    name: shift_add
+    <<<: [*component_defaults, *keep_outputs, *no_temporal_reuse]
+    subclass: shift_add
+    attributes: 
+      <<<: *cim_component_attributes
+      width: round(OUTPUT_BITS / SPECULATION_ADC_ENERGY_SCALE)
+      n_bits: OUTPUT_BITS
+      shift_register_n_bits: OUTPUT_BITS * 2
+    # Below this point, signed inputs are processed in two cycles (one for positive, one for negative)
+    energy_scale: 2 if SIGNED_INPUTS else 1
+
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes:
+      <<<: *cim_component_attributes
+      width: round(OUTPUT_BITS / SPECULATION_ADC_ENERGY_SCALE) # Use width to scale the energy
+      include_column_drivers: 0
+      throughput_scale: 1 / 100 # 100 cycles to process all outputs
+    # Below this point, signed inputs are processed in two cycles (one for positive, one for negative)
+    energy_scale: 2 if SIGNED_INPUTS else 1
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: 
+      width: DAC_RESOLUTION
+      <<: *cim_component_attributes
+      temporal_dac_bits: DAC_RESOLUTION
+      temporal_spiking: True
+    energy_scale: 2 if SIGNED_INPUTS else 1
+
+  - !ArrayContainer # Each column stores a different weight slice. Columns share inputs.
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: 512}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column.get_fanout()-2))]}}
+
+  - !Component # Psubbuf to capture & buffer analog column sums
+    name: timely_psubbuf
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: timely_psubbuf
+    attributes: {width: OUTPUT_BITS, technology: 65}
+    # Below this point, signed inputs are processed in two cycles (one for positive, one for negative)
+    energy_scale: 2 if SIGNED_INPUTS else 1
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: 512}
+    constraints: {spatial: {maximize_dims: [R, S, C]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+    # Below this point, signed inputs are processed in two cycles (one for positive, one for negative)
+    energy_scale: 2 if SIGNED_INPUTS else 1
+    attributes:
+      # If speculation is enabled, requires 11/8x the cycles (-> 8/11 the bandwidth)
+      bw_speculation_scale: (8/11) ** SPECULATION_ENABLED
+      read_bandwidth: WEIGHT_BITS_PER_SLICE * bw_speculation_scale / (2 if SIGNED_INPUTS else 1) / 100 # 100 cycles per activation
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

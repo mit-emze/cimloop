@@ -1,0 +1,17 @@
+@inproceedings{10.1145/3579371.3589062,
+author = {Andrulis, Tanner and Emer, Joel S. and Sze, Vivienne},
+title = {RAELLA: Reforming the Arithmetic for Efficient, Low-Resolution, and Low-Loss Analog PIM: No Retraining Required!},
+year = {2023},
+isbn = {9798400700958},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3579371.3589062},
+doi = {10.1145/3579371.3589062},
+abstract = {Processing-In-Memory (PIM) accelerators have the potential to efficiently run Deep Neural Network (DNN) inference by reducing costly data movement and by using resistive RAM (ReRAM) for efficient analog compute. Unfortunately, overall PIM accelerator efficiency is limited by energy-intensive analog-to-digital converters (ADCs). Furthermore, existing accelerators that reduce ADC cost do so by changing DNN weights or by using low-resolution ADCs that reduce output fidelity. These strategies harm DNN accuracy and/or require costly DNN retraining to compensate.To address these issues, we propose the RAELLA architecture. RAELLA adapts the architecture to each DNN; it lowers the resolution of computed analog values by encoding weights to produce near-zero analog values, adaptively slicing weights for each DNN layer, and dynamically slicing inputs through speculation and recovery. Low-resolution analog values allow RAELLA to both use efficient low-resolution ADCs and maintain accuracy without retraining, all while computing with fewer ADC converts.Compared to other low-accuracy-loss PIM accelerators, RAELLA increases energy efficiency by up to 4.9\texttimes{} and throughput by up to 3.3\texttimes{}. Compared to PIM accelerators that cause accuracy loss and retrain DNNs to recover, RAELLA achieves similar efficiency and throughput without expensive DNN retraining.},
+booktitle = {Proceedings of the 50th Annual International Symposium on Computer Architecture},
+articleno = {27},
+numpages = {16},
+keywords = {ReRAM, ADC, slicing, architecture, accelerator, neural networks, analog, compute in memory, processing in memory},
+location = {Orlando, FL, USA},
+series = {ISCA '23}
+}

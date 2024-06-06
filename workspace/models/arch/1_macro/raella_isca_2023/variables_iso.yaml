@@ -1,0 +1,38 @@
+# These variables pertain to the workload, microarch, and circuits. They should
+# be matched between architectures when comparing for a fair comparison.
+# Furthermore, this file should follow the same format for all architectures
+# such that we can mix and match architectures with different iso files.
+variables:
+  version: 0.4
+  # ===========================================================================
+  # Workload, microarch, circuits. Things that should be matched
+  # between architectures when comparing.
+  # ===========================================================================
+  ## Workload -----------------------------------------------------------------
+  WEIGHT_BITS: 8
+  INPUT_BITS:  8
+  OUTPUT_BITS: 8
+  BATCH_SIZE:  1
+
+  # Set by CiM processor if these values are available in the workload.
+  # Otherwise, use the defaults here.
+  INPUTS_HIST: [0, 0, 0, 3, 1, 0, 0]
+  WEIGHTS_HIST: [0, 1, 3, 4, 3, 1, 0]
+  OUTPUTS_HIST: INPUTS_HIST
+
+  ## Microarch ----------------------------------------------------------------
+  SUPPORTED_INPUT_BITS:  8       # Maximum input bits supported by the arch.
+  SUPPORTED_WEIGHT_BITS: 8       # Maximum weight bits supported by the arch.
+  SUPPORTED_OUTPUT_BITS: 8       # Maximum output bits supported by the arch.
+
+  # Circuits ------------------------------------------------------------------
+  VOLTAGE: 1
+  TECHNOLOGY: 32 # nm
+  CELL_CONFIG: "{{find_path('rram_raella_isca_2023.cell.yaml')}}"
+  VOLTAGE_ENERGY_SCALE: VOLTAGE ** 2
+  VOLTAGE_LATENCY_SCALE: VOLTAGE
+
+  # Calibration ---------------------------------------------------------------
+  ADC_ENERGY_SCALE: 1
+  ADC_AREA_SCALE: 1
+  ROW_COL_DRIVERS_AREA_SCALE: 1

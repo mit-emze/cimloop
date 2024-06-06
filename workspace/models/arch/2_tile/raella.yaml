@@ -1,0 +1,45 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  # ======================= Top level is !Hierarchical =======================
+  nodes:
+  - !Container # Tile top-level
+    name: tile
+    <<<: [*container_defaults]
+    attributes: {has_power_gating: True}
+
+  - !Component # eDRAM buffer serves a set of tiles
+    name: eDRAM_buf
+    <<<: [*component_defaults]
+    subclass: isaac_edram
+    attributes: {depth: 2048, width: 256}
+    constraints: {dataspace: {keep_only: [Inputs, Outputs]}}
+    
+  - !Component # Quantize outputs before sending them to the next tile
+    name: output_quantize
+    # <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: output_quantize_edram
+    attributes:
+      depth: 2048 # storage_for_scales is used for energy, and capacity is
+                  # calculated to be sufficient.
+      width: 256
+      # This register doesn't really store outputs, but we've oversized it by
+      # 2x so it doesn't break our mapping. Energy corrected with the following:
+      storage_for_scales: depth * width // 2
+
+  - !Component # Inter-tile network feeds inputs/outputs between tiles
+    name: inter_macro_network
+    <<<: [*component_defaults, *keep_inputs, *keep_outputs, *no_coalesce]
+    subclass: isaac_eDRAM_bus
+    attributes:
+      width: 256
+      n_instances: macro_in_tile.spatial.get_fanout()
+    constraints: {temporal: {no_reuse: []}}
+
+  - !Container # Macro
+    name: macro_in_tile # long name so it doesn't conflict with other names
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    attributes: {has_power_gating: True}
+    spatial: {meshX: 8}
+    max_utilization: {spatial: {factors: [('M=' + str(macro_in_tile.get_fanout()))]}}
