@@ -150,7 +150,10 @@ def encoded_hist_to_avg_slice(
     for e in encoded_hist:
         for i in range(total_bits):
             slice_idx, scale = bit2slice[i]
-            bit_value = e.bits[i] if i < len(e.bits) else 0.5
+            if i >= len(e.bits):
+                bit_value = sum(e.bits) / len(e.bits)
+            else:
+                bit_value = e.bits[i]
             avg_slice_values[slice_idx] += bit_value * e.probability * scale
 
     if return_per_slice:
