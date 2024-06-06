@@ -108,7 +108,7 @@ def get_important_variables_markdown(name: str):
         if isinstance(v, tuple):
             pfmat(v[0], s.variables.get(v[0], None), v[1])
         else:
-            pfmat(v, s.variables.get(v[0], None))
+            pfmat(v, s.variables.get(v, None))
 
     return "\n".join(result)
 
