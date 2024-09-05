@@ -13,7 +13,7 @@ architecture:
     subclass: raella_output_center_offset_correct
     attributes: 
       width: OUTPUT_BITS
-      center_entries: ARRAY_PARALLEL_OUTPUTS
+      center_entries: (ARRAY_PARALLEL_OUTPUTS * 4) // SUPPORTED_WEIGHT_BITS #  #Cols  * Max bits per col / bits per weight
 
   - !Component # Input buffer
     name: input_buffer
@@ -42,7 +42,7 @@ architecture:
     attributes:
       entry_bits: SUPPORTED_OUTPUT_BITS * 2
       width: entry_bits * N_ADC_PER_BANK * 2
-      n_entries: ARRAY_PARALLEL_OUTPUTS
+      n_entries: (ARRAY_PARALLEL_OUTPUTS * 4) // SUPPORTED_WEIGHT_BITS #  #Cols  * Max bits per col / bits per weight
       depth: entry_bits * n_entries // width # depth=Capacity/width
       datawidth: 2 # Accumulate in 16b registers instead of 8b. 2x datawidth 
       speculation_adc_scale: SPECULATION_ADC_ENERGY_SCALE
