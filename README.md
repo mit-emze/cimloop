@@ -8,8 +8,7 @@ systems and fast, accurate statistical energy modeling.
 This repository contains tutorials, examples, documentation, and an artifact for
 the CiMLoop paper. All are accessible through the Docker container.
 
-**Note: This repository is a work in progress. More tutorials and documentation
-are on the way!**
+For the paper or presentations relating to CiMLoop, please visit the [project website](https://emze.csail.mit.edu/cimloop).
 
 ## Quick Start
 
