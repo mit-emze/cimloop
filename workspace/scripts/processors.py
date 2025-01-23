@@ -1,4 +1,4 @@
-import timeloopfe.v4 as tl
+import pytimeloop.timeloopfe.v4 as tl
 
 
 class ArrayContainer(tl.arch.Container):

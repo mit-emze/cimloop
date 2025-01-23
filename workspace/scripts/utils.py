@@ -4,7 +4,7 @@ from typing import Callable, Union, Iterable, List
 import os
 import threading
 import joblib
-import timeloopfe.v4 as tl
+import pytimeloop.timeloopfe.v4 as tl
 import sys
 import importlib.util
 import sys

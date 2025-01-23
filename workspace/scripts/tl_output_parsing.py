@@ -1,7 +1,7 @@
 import os
 from typing import Any, Iterable, Tuple, List, Union
-import timeloopfe.v4 as tl
-from timeloopfe.v4.output_parsing import MultipliableDict
+import pytimeloop.timeloopfe.v4 as tl
+from pytimeloop.timeloopfe.v4.output_parsing import MultipliableDict
 import yaml
 
 
