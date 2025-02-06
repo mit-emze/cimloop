@@ -21,6 +21,12 @@ variables:
   INPUT_ENCODING_FUNC: offset_encode_hist
   WEIGHT_ENCODING_FUNC: offset_encode_hist
 
+  # For accuracy model. Can in-array accumulation include signed values?
+  # Signed accumulation not compatible with offset encoding (since offset
+  # encoding makes values non-negative).
+  SIGNED_SUM_ACROSS_INPUTS: False
+  SIGNED_SUM_ACROSS_WEIGHTS: False
+
   # ===========================================================================
   # Architecture & CiM Array Structure
   # ===========================================================================

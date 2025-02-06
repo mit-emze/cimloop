@@ -18,8 +18,14 @@ variables:
   ENCODED_WEIGHT_BITS: WEIGHT_BITS * (2 if is_hist_signed(WEIGHTS_HIST) else 1)
   ENCODED_OUTPUT_BITS: OUTPUT_BITS
 
-  INPUT_ENCODING_FUNC: two_sided_encode_if_signed_hist
-  WEIGHT_ENCODING_FUNC: two_sided_encode_if_signed_hist
+  INPUT_ENCODING_FUNC: two_part_magnitude_encode_if_signed_hist
+  WEIGHT_ENCODING_FUNC: two_part_magnitude_encode_if_signed_hist
+
+  # For accuracy model. Can in-array accumulation include signed values?
+  # Signed accumulation not compatible with offset encoding (since offset
+  # encoding makes values non-negative).
+  SIGNED_SUM_ACROSS_INPUTS: False
+  SIGNED_SUM_ACROSS_WEIGHTS: False
 
   # ===========================================================================
   # Architecture & CiM Array Structure

@@ -6,11 +6,108 @@
 from math import log2
 from typing import List, NamedTuple, Union
 
-
 class ProbableBits(NamedTuple):
     bits: list
     probability: float
 
+# ==============================================================================
+# Encoding functions
+# ==============================================================================
+
+
+def magnitude_encode_hist(weights) -> List[ProbableBits]:
+    """
+    A signed value is encoded as a positive or negative magnitude of that value.
+    Signed hardware is requireed.
+    """
+    nbits = get_num_bits(weights)
+    encoded = []
+    halfwidth = len(weights) / 2
+    for i, w in enumerate(weights):
+        normed = norm(i, len(weights), -halfwidth + 0.5, halfwidth + 0.5)
+        encoded.append(ProbableBits(to_bits_unsigned(abs(normed), nbits)[1:], w))
+    return norm_encoded_hist(encoded)
+
+def two_part_magnitude_encode_hist(weights):
+    """
+    Two (devices, timesteps, components, etc.) encode each signed value. If the
+    value is positive, the first device encodes the magnitude of the value. If the
+    value is negative, the second device encodes the magnitude of the value. The
+    other device encodes 0.
+    """
+    m = magnitude_encode_hist(weights)
+    m2 = []
+    for e in m:
+        m2.append(ProbableBits(e.bits, e.probability / 2))
+        m2.append(ProbableBits([0] * len(e.bits), e.probability / 2))
+    return m2
+
+def offset_encode_hist(weights):
+    """
+    A signed value is encoded as the the value minus the negative minimum value.
+    This maps a range of [-min, max] to [0, max - min]. The bias must be added
+    back after computation.
+    """
+    nbits = get_num_bits(weights)
+    encoded = []
+    for i, w in enumerate(weights):
+        normed = norm(i, len(weights), 0, len(weights))
+        encoded.append(ProbableBits(to_bits_unsigned(normed, nbits), w))
+    return norm_encoded_hist(encoded)
+
+
+def offset_encode_if_signed_hist(weights):
+    """
+    Offset encode a value only if it is signed. Otherwise, don't apply any bias and just
+    use the positive values.
+    """
+    if is_hist_signed(weights):
+        return offset_encode_hist(weights)
+    return magnitude_encode_hist(weights)
+
+
+def two_part_magnitude_encode_if_signed_hist(weights):
+    """
+    Two part magnitude encode a value only if it is signed. Otherwise, use only posiive
+    values.
+    """
+    if is_hist_signed(weights):
+        return two_part_magnitude_encode_hist(weights)
+    return magnitude_encode_hist(weights)
+
+
+def xnor_encode_hist(weights):
+    """
+    XNOR encoding based on Jia JSSCC 2020.
+    """
+    nbits = get_num_bits(weights)
+    encoded = []
+    halfwidth = len(weights) / 2
+    for i, w in enumerate(weights):
+        normed = norm(i, len(weights), -halfwidth + 0.5, halfwidth + 0.5)
+        bits = []
+        for j in list(range(nbits - 1, -1, -1)) + [-1, -1]:
+            bits.append(int(normed > 0))
+            normed -= 2**j * (2 * bits[-1] - 1)
+        assert normed == 0, f"normed={normed} is not 0"
+        encoded.append(ProbableBits(bits, w))
+    return norm_encoded_hist(encoded)
+
+
+def zero_gated_xnor_encode_hist(weights):
+    """
+    XNOR encoding with zero gating based on Jia JSSCC 2020.
+    """
+    encoded = xnor_encode_hist(weights)
+    zero_idx = len(encoded) // 2
+    encoded[zero_idx] = ProbableBits(
+        [0] * len(encoded[zero_idx].bits), encoded[zero_idx].probability
+    )
+    return encoded
+
+# ==============================================================================
+# Helper functions
+# ==============================================================================
 
 def assert_hist_pow2_minus1(hist):
     x = 1
@@ -48,70 +145,6 @@ def hist_to_magnitude(hist):
         new_hist[i] = hist[hist_center + i] + hist[hist_center - i]
     assert_hist_pow2_minus1(new_hist)
     return new_hist
-
-
-def magnitude_encode_hist(weights) -> List[ProbableBits]:
-    nbits = get_num_bits(weights)
-    encoded = []
-    halfwidth = len(weights) / 2
-    for i, w in enumerate(weights):
-        normed = norm(i, len(weights), -halfwidth + 0.5, halfwidth + 0.5)
-        encoded.append(ProbableBits(to_bits_unsigned(abs(normed), nbits)[1:], w))
-    return norm_encoded_hist(encoded)
-
-
-def offset_encode_hist(weights):
-    nbits = get_num_bits(weights)
-    encoded = []
-    for i, w in enumerate(weights):
-        normed = norm(i, len(weights), 0, len(weights))
-        encoded.append(ProbableBits(to_bits_unsigned(normed, nbits), w))
-    return norm_encoded_hist(encoded)
-
-
-def offset_encode_if_signed_hist(weights):
-    if is_hist_signed(weights):
-        return offset_encode_hist(weights)
-    return magnitude_encode_hist(weights)
-
-
-def two_sided_encode_hist(weights):
-    m = magnitude_encode_hist(weights)
-    m2 = []
-    for e in m:
-        m2.append(ProbableBits(e.bits, e.probability / 2))
-        m2.append(ProbableBits([0] * len(e.bits), e.probability / 2))
-    return m2
-
-
-def two_sided_encode_if_signed_hist(weights):
-    if is_hist_signed(weights):
-        return two_sided_encode_hist(weights)
-    return magnitude_encode_hist(weights)
-
-
-def xnor_encode_hist(weights):
-    nbits = get_num_bits(weights)
-    encoded = []
-    halfwidth = len(weights) / 2
-    for i, w in enumerate(weights):
-        normed = norm(i, len(weights), -halfwidth + 0.5, halfwidth + 0.5)
-        bits = []
-        for j in list(range(nbits - 1, -1, -1)) + [-1, -1]:
-            bits.append(int(normed > 0))
-            normed -= 2**j * (2 * bits[-1] - 1)
-        assert normed == 0, f"normed={normed} is not 0"
-        encoded.append(ProbableBits(bits, w))
-    return norm_encoded_hist(encoded)
-
-
-def zero_gated_xnor_encode_hist(weights):
-    encoded = xnor_encode_hist(weights)
-    zero_idx = len(encoded) // 2
-    encoded[zero_idx] = ProbableBits(
-        [0] * len(encoded[zero_idx].bits), encoded[zero_idx].probability
-    )
-    return encoded
 
 
 def to_bits_unsigned(x, nbits):
