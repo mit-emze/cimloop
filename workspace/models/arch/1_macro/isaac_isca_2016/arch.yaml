@@ -1,0 +1,89 @@
+{{include_text('defines.yaml')}}
+
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+
+  - !Component # Input buffer
+    name: input_buffer
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes:
+      width: 32
+      n_entries: ARRAY_PARALLEL_INPUTS * array.spatial.meshX * SUPPORTED_OUTPUT_BITS
+      depth: n_entries // width # depth=Capacity/width
+    constraints:
+      dataspace: {keep_only: [Outputs]}
+      temporal: {factors_only: [X=0], factors: []} # 0 = all
+    enabled: True
+
+  - !Component # Output buffer
+    name: output_buffer
+    <<<: [*component_defaults]
+    subclass: smartbuffer_sram
+    attributes:
+      width: 32
+      n_entries: ARRAY_PARALLEL_OUTPUTS * array.spatial.meshX * SUPPORTED_OUTPUT_BITS * 2
+      depth: n_entries // width # depth=Capacity/width
+      datawidth: 2 # Need 2x datawidth for accumulation. The paper had 1x but we change to 2
+                   # to match the other models 
+    constraints:
+      dataspace: {keep_only: [Outputs]}
+      temporal: {factors_only: [X=0], factors: []} # 0 = all
+    enabled: True
+
+  - !Component # Shift+add sums outputs from multiple slices
+    name: shift_add
+    <<<: [*component_defaults, *keep_outputs, *no_temporal_reuse]
+    subclass: shift_add
+    attributes: 
+      <<<: *cim_component_attributes
+      width: OUTPUT_BITS
+      n_bits: OUTPUT_BITS
+      shift_register_n_bits: OUTPUT_BITS * 2
+      n_instances: array.spatial.meshX # Match throughput with arrays
+
+  - !Container # array: Independent array with memory elements and peripherals.
+    name: array
+    <<<: [*container_defaults, *spatial_map_all_weights]
+    spatial: {meshX: 8}
+    max_utilization: {spatial: {factors: [('C=' + str(array.get_fanout()))]}}
+
+  - !Component # ADC
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc
+    attributes:
+      <<<: *cim_component_attributes
+      width: OUTPUT_BITS
+      include_column_drivers: 0
+      throughput_scale: 1 / 100 # 100 cycles to process all outputs
+
+  - !Component # Row drivers feed inputs onto the rows of the array
+    name: row_drivers
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: input_row_drivers
+    attributes: {width: DAC_RESOLUTION, <<: *cim_component_attributes}
+
+  - !ArrayContainer # Each column stores a different weight slice. Columns share inputs.
+    name: column
+    <<<: [*container_defaults, *spatial_must_reuse_inputs]
+    spatial: {meshX: 128}
+    constraints: {spatial: {maximize_dims: [[Y], [M]]}}
+    max_utilization: {spatial: {factors: [('M=' + str(column.get_fanout()))]}}
+
+  - !ArrayContainer # Each row receives a different input slice. Rows share outputs.
+    name: row
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: 128}
+    constraints: {spatial: {maximize_dims: [R, S, C]}}
+    max_utilization: {spatial: {factors: [('C=' + str(row.get_fanout()))]}}
+
+  - !Component # CiM unit stores weights and computes MACs. Defined in include/defines.yaml.
+    <<<: *cim_unit 
+
+  - !Hierarchical           # Virtualize an XxYxZ-bit MAC as multiple MAC units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

@@ -1,0 +1,183 @@
+compound_components:
+  version: 0.4
+  classes:
+  # ===========================================================================
+  # RAELLA output register. Includes a buffer for psums + a flag buffer for
+  # speculation.
+  # ===========================================================================
+  - name: raella_output_register
+    attributes:
+      width: "must_specify"
+      depth: "must_specify"
+      speculation_adc_scale: "must_specify"
+      technology: "must_specify"
+      entry_bits: "must_specify"
+      speculation_enabled: speculation_adc_scale != 1
+      n_flags: "must_specify"
+      flag_width: 64
+      flag_reads_per_read: (width // entry_bits) / flag_width
+      flag_energy_scale: speculation_enabled * flag_reads_per_read
+
+    subcomponents:
+    - name: buf
+      class: smartbuffer_sram
+      attributes:
+        technology: technology
+        width: width
+        depth: depth
+
+    - name: flags
+      class: smartbuffer_sram
+      attributes:
+        technology: technology
+        width: 64
+        depth: n_flags // width
+
+    actions:
+    - name: read
+      subcomponents: 
+      - {name: buf, actions: [{name: read, energy_scale: speculation_adc_scale}]}
+      - {name: flags, actions: [{name: read, energy_scale: flag_energy_scale}]}
+    - &update_action
+      name: update
+      subcomponents: 
+      - {name: buf, actions: [{name: write, energy_scale: speculation_adc_scale}]}
+      - {name: flags, actions: [{name: write, energy_scale: flag_energy_scale}]}
+    - name: leak
+      subcomponents: 
+      - {name: buf, actions: [{name: leak}]}
+      - {name: flags, actions: [{name: leak}]}
+    - {name: write, <<: *update_action} # Same as update
+
+  # ===========================================================================
+  # Input buffer.
+  # ===========================================================================
+  - name: raella_input_buffer
+    attributes:
+      real_width: "must_specify"
+      width: real_width
+      depth: "must_specify"
+      technology: "must_specify"
+      adc_energy_scale: "must_specify"
+      input_bits: "must_specify"
+
+    subcomponents:
+    - name: buf
+      class: smartbuffer_sram
+      attributes:
+        width: width
+        technology: technology
+        # Read once for normal operation, twice for speculation
+        read_energy_scale: 1 if adc_energy_scale == 1 else 2
+        depth: depth
+
+    - name: input_summer
+      class: aladdin_adder
+      attributes:
+        technology: technology
+        datawidth: input_bits * 2
+        width: input_bits * 2
+
+    actions:
+    # If we speculate (ADC action share is something other than 1) then we must
+    # read twice for speculate and recover
+    - name: read
+      subcomponents:
+      - name: buf
+        actions: 
+        - {name: read, energy_scale: 1 if adc_energy_scale == 1 else 2}
+    # On a write we must update the running sum. Read the old value, subtract, 
+    # add the new value.
+    - &update_action
+      name: update
+      subcomponents:
+      - {name: buf, actions: [{name: read}]}
+      - {name: buf, actions: [{name: write}]}
+      - {name: input_summer, actions: [{name: add, energy_scale: 2}]}
+    - {name: write, <<: *update_action} # Same as update
+
+    - name: leak
+      subcomponents: 
+      - {name: buf, actions: [{name: leak}]}
+      - {name: input_summer, actions: [{name: leak}]}
+
+
+
+  # ===========================================================================
+  # Center+Offset correct has a buffer for offsets and a multiplier to
+  # multiply the input running sum by the offset.
+  # ===========================================================================
+  - name: raella_output_center_offset_correct
+    attributes:
+      width: "must_specify"
+      depth: "must_specify"
+      technology: "must_specify"
+      center_entries: "must_specify"
+      buf_width: 64
+      read_share: width / buf_width
+      n_center_entry_bits: 4
+
+    subcomponents:
+    - name: offsets_buf
+      class: smartbuffer_sram
+      attributes:
+        technology: technology
+        width:      64
+        depth:      center_entries // width * n_center_entry_bits
+
+    - name: multiplier
+      class: aladdin_multiplier
+      attributes:
+        technology: technology
+        width_a:    n_center_entry_bits
+        width_b:    12
+
+    actions:
+    - name: read  # Read action processes a value
+      subcomponents:
+      # Read offsets buf and compute the offset required
+      - {name: offsets_buf, actions: [{name: read, energy_scale: read_share}]}
+      - {name: multiplier, actions: [{name: multiply}]}
+    - {name: write, subcomponents: []} # Unused
+    - {name: update, subcomponents: []} # Unused
+    - name: leak
+      subcomponents:
+      - {name: offsets_buf, actions: [{name: leak}]}
+      - {name: multiplier, actions: [{name: leak}]}
+
+
+  - name: output_quantize_edram
+    attributes:
+      width: "must_specify"
+      depth: "must_specify"
+      technology: "must_specify"
+      storage_for_scales: "must_specify"
+    subcomponents:
+    - name: edram_scales
+      class: isaac_edram
+      attributes:
+        technology: technology
+        depth: depth
+        width: storage_for_scales // depth
+
+    - name: multiplier
+      class: raella_quant_multiplier
+      attributes:
+        technology: technology
+
+    actions:
+    - name: read # Read action processes a value
+      subcomponents:
+      - name: edram_scales
+        actions: [{name: read}]
+      - name: multiplier
+        actions: [{name: multiply, energy_scale: width // 8}]
+    - {name: write, subcomponents: []}
+    - {name: update, subcomponents: []}
+    - name: leak
+      subcomponents:
+      - name: edram_scales
+        actions: [{name: leak}]
+      - name: multiplier
+        actions: [{name: leak}]
+

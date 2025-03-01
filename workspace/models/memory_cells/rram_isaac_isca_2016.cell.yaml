@@ -2,18 +2,19 @@
 # Device type and top-level parameters
 
 # Device type
--MemCellType: SRAM  # SRAM or RRAM
+-MemCellType: RRAM  # SRAM or RRAM
 # -ReadMode: current  # Comment this line for voltage
 -DeviceRoadmap -1LP 1HP 2LSTP:  2
 
 # Device size
--CellArea (F^2):  1.49011611938
+-CellArea (F^2):  16 # NeuroSim gets mad if it's too small. Doesn't matter too
+                     # much because this is pretty small in the overall accelerator.
 -CellAspectRatio: 1 # Width/Height
 
 # Calibration parameters
 -CellReadLeakEnergyMultiplier: 1
 -CellWriteEnergyMultiplier: 1
--CellCapacitanceMultiplier: 1
+-CellCapacitanceMultiplier: 0.3 # Correct for cell area scaling
 -CellCapacitanceAdjust (F): 0.0e-15 # Capacitance = (Nominal Capacitance) * Multiplier + Adjust
 
 # Used for RRAM with access transistors or SRAM
@@ -33,7 +34,7 @@
 # -----------------------------------------------------------------------------
 # RRAM-only parameters
 # RRAM configuration. Only used if MemCellType is RRAM
--ResistanceOn (ohm): 2000
+-ResistanceOn (ohm): 1333
 -ResistanceOff (ohm): 20000
 
 # Set parameters

@@ -15,6 +15,8 @@ architecture:
     attributes: {depth: 2048, width: 256}
     constraints: {dataspace: {keep_only: [Inputs, Outputs]}}
     
+  # The original ISAAC paper does not have this component, but we add it
+  # to match the other models and let ISAAC support lower precision.
   - !Component # Quantize outputs before sending them to the next tile
     name: output_quantize
     <<<: [*component_defaults, *keep_outputs, *no_coalesce]
@@ -40,5 +42,6 @@ architecture:
     name: macro_in_tile # long name so it doesn't conflict with other names
     <<<: [*container_defaults, *spatial_map_all_weights]
     attributes: {has_power_gating: True}
-    spatial: {meshX: 8}
+    spatial: {meshX: 12}
+    constraints: {spatial: {no_reuse: ["*"]}}
     max_utilization: {spatial: {factors: [('M=' + str(macro_in_tile.get_fanout()))]}}

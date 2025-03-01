@@ -23,7 +23,7 @@
 
 # Affects NeuroSim-realized ADCs. NOTE: Most models use ADC plug-in ADCs and
 # this has little to no effect.
--ReadMode: current # voltage or current
+-ReadMode: voltage # voltage or current
 
 # -----------------------------------------------------------------------------
 # SRAM-only parameters
