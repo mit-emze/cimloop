@@ -1,0 +1,4 @@
+globals_lightning:
+  version: 0.4
+  environment_variables:
+    ACCELERGY_COMPONENT_LIBRARIES_LIGHTNING: "{{find_path('lightning_components')}}"

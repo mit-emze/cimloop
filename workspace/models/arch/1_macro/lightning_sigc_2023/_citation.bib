@@ -1,0 +1,17 @@
+@inproceedings{10.1145/3603269.3604821,
+author = {Zhong, Zhizhen and Yang, Mingran and Lang, Jay and Williams, Christian and Kronman, Liam and Sludds, Alexander and Esfahanizadeh, Homa and Englund, Dirk and Ghobadi, Manya},
+title = {Lightning: A Reconfigurable Photonic-Electronic SmartNIC for Fast and Energy-Efficient Inference},
+year = {2023},
+isbn = {9798400702365},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3603269.3604821},
+doi = {10.1145/3603269.3604821},
+abstract = {The massive growth of machine learning-based applications and the end of Moore's law have created a pressing need to redesign computing platforms. We propose Lightning, the first reconfigurable photonic-electronic smartNIC to serve real-time deep neural network inference requests. Lightning uses a fast datapath to feed traffic from the NIC into the photonic domain without creating digital packet processing and data movement bottlenecks. To do so, Lightning leverages a novel reconfigurable count-action abstraction that keeps track of the required computation operations of each inference packet. Our count-action abstraction decouples the compute control plane from the data plane by counting the number of operations in each task and triggers the execution of the next task(s) without interrupting the dataflow. We evaluate Lightning's performance using four platforms: a prototype, chip synthesis, emulations, and simulations. Our prototype demonstrates the feasibility of performing 8-bit photonic multiply-accumulate operations with 99.25\% accuracy. To the best of our knowledge, our prototype is the highest-frequency photonic computing system, capable of serving real-time inference queries at 4.055 GHz end-to-end. Our simulations with large DNN models show that compared to Nvidia A100 GPU, A100X DPU, and Brainwave smartNIC, Lightning accelerates the average inference serve time by 337\texttimes{}, 329\texttimes{}, and 42\texttimes{}, while consuming 352\texttimes{}, 419\texttimes{}, and 54\texttimes{} less energy, respectively.},
+booktitle = {Proceedings of the ACM SIGCOMM 2023 Conference},
+pages = {452–472},
+numpages = {21},
+keywords = {photonic computing, network hardware design, computer architecture, real-time AI, machine learning inference},
+location = {New York, NY, USA},
+series = {ACM SIGCOMM '23}
+}

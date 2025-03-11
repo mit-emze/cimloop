@@ -1,0 +1,124 @@
+{{include_text('defines.yaml')}}
+architecture:
+  nodes: &macro # TOP MACRO
+  # ===========================================================================
+  - !Container # Macro top-level
+    name: macro
+    <<<: [*container_defaults]
+  {{ignoreme_placeholder | default('') | indent(2)}}
+  ## Memory controller and packet_io are in the same level of hierarchy that is why they have identical constraints other than the fact that the one keeps weights and the other keeps inputs. It basically is like putting weights and inputs in the same buffer while having an output stationary dataflow, but we have two components here, since we need to use different technologies
+  - !Component # Packet_io models the network stream of the inputs
+    name: packet_io_input
+    <<<: [*component_defaults, *keep_inputs]
+    subclass: lightning_io
+    attributes:
+      depth: 4096
+      width: 512
+      datawidth: 8
+      n_instances: PARALLEL_BATCH_SIZE*NUM_WAVELENGTHS
+    constraints:
+      #dataspace: {keep_only: [Inputs]}
+      temporal:
+        factors_only: [M=-1, C=-1, P=-1, Q=-1, N=-1, R=-1, S=-1]
+        factors: []
+        no_iteration_over_dataspaces: !nomerge [] # Overwrite default
+        permutation: [R, S, C, N, M, P, Q] # Output stationary with weight broadcasting
+  - !Component # Packet_io models the network stream of the inputs
+    name: packet_io_output
+    <<<: [*component_defaults, *keep_outputs]
+    subclass: lightning_io
+    attributes:
+      depth: 4096
+      width: 512
+      datawidth: 8
+      n_instances: NUM_PARALLEL_WEIGHTS*PARALLEL_BATCH_SIZE
+    constraints:
+      #dataspace: {keep_only: [Inputs]}
+      temporal:
+        factors_only: [M=-1, C=-1, P=-1, Q=-1, N=-1, R=-1, S=-1]
+        factors: []
+        no_iteration_over_dataspaces: !nomerge [] # Overwrite default
+        permutation: [R, S, C, N, M, P, Q] # Output stationary with weight broadcasting
+  - !Component # There are n_instances memory controllers (one for each weight-split) that represent the weight memory
+    name: memory_controller
+    <<<: [*component_defaults, *keep_weights, *keep_weights]
+    subclass: lightning_sram
+    attributes:
+      depth: 4096
+      width: 512
+      datawidth: 8
+      n_instances: NUM_PARALLEL_WEIGHTS*NUM_WAVELENGTHS
+    constraints:
+      #dataspace: {keep_only: [Inputs]}
+      temporal:
+        factors_only: [M=-1, C=-1, P=-1, Q=-1, N=-1, R=-1, S=-1]
+        factors: []
+        no_iteration_over_dataspaces: !nomerge [] # Overwrite default
+        permutation: [R, S, C, N, M, P, Q] # Output stationary with weight broadcasting
+  - !Component # One laser at the top of the design
+    name: laser
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: lightning_laser
+    attributes: {width: DAC_RESOLUTION*NUM_PARALLEL_WEIGHTS*NUM_WAVELENGTHS, <<: *cim_component_attributes}
+  - !Component
+    name: weight_dacs
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: dac_lightning
+    attributes: {width: DAC_RESOLUTION, n_instances: NUM_PARALLEL_WEIGHTS*NUM_WAVELENGTHS}
+  - !Component
+    name: WMUs
+    <<<: [*component_defaults, *keep_weights, *no_coalesce]
+    subclass: lightning_modulator
+    attributes: {width: INPUT_BITS, n_instances: NUM_PARALLEL_WEIGHTS*NUM_WAVELENGTHS}
+  - !ArrayContainer
+    name: IMU
+    <<<: [*container_defaults, *spatial_must_reuse_weights]
+    spatial: {meshX: PARALLEL_BATCH_SIZE}
+    
+    constraints: 
+        spatial: 
+            maximize_dims: [N]
+            factors: [M=1, C=1, P=1, Q=1, R=1, S=1]
+    max_utilization: {spatial: {factors: [('N=' + str(IMU.get_fanout()))]}}
+  - !Component # Column readout (ADC)
+    name: adc
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: adc_lightning
+    attributes: {width: ENCODED_OUTPUT_BITS, <<<: *cim_component_attributes, n_instances: NUM_PARALLEL_WEIGHTS}
+  - !Component # Photodetectors
+    name: photodetector
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
+    subclass: lightning_photodiode
+    attributes:
+        width: ENCODED_OUTPUT_BITS*max(NUM_PARALLEL_WEIGHTS, NUM_WAVELENGTHS)
+        <<<: *cim_component_attributes
+        n_instances: NUM_PARALLEL_WEIGHTS
+  - !ArrayContainer # Similar to albireo how each row works on a different column of the filter weights,
+    # so too does each im work on a different column of the weights.
+    name: input_modulator
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: NUM_WAVELENGTHS}
+    constraints:
+        spatial:
+            maximize_dims: [C, S]
+    #max_utilization: {spatial: {factors: [('S=' + str(input_modulator.get_fanout()))]}}
+  - !Component
+    name: input_dac
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: dac_lightning
+    attributes: {width: DAC_RESOLUTION}
+  - !Component
+    name: individual_modulator_placeholder
+    <<<: [*component_defaults, *keep_inputs, *no_coalesce]
+    subclass: lightning_modulator
+    attributes: {width: INPUT_BITS}
+  - !ArrayContainer
+    name: virtualized_modulator
+    <<<: [*container_defaults, *spatial_must_reuse_outputs]
+    spatial: {meshY: NUM_PARALLEL_WEIGHTS}
+    constraints:
+        spatial:
+            maximize_dims: [C, R]
+    #max_utilization: {spatial: {factors: [('R=' + str(virtualized_modulator.get_fanout()))]}}
+  - !Hierarchical           # Virtualize an XxYxZ-bit modulator as multiple modulator units.
+    nodes: *virtualized_mac # Defined in include/defines.yaml.

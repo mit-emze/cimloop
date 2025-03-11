@@ -1,0 +1,41 @@
+COMPONENT: dac_lightning
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+65nm,8,convert|read,0.793,580000,1,energy in pJ;  area in um^2
+65nm,8,write|update|leak,0,580000,1
+
+COMPONENT: adc_lightning
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+65nm,8,convert|read,0.773,580000,1,energy in pJ;  area in um^2
+65nm,8,write|update|leak,0,580000,1
+
+COMPONENT: lightning_photodiode
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+65nm,8,write,0.0000399,32,1,energy in pJ;  area in um^2
+65nm,8,read|update|leak,0,32,1,energy in pJ;  area in um^2
+
+COMPONENT: lightning_modulator
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+65nm,8,read,0.0000399,2500000,1,energy in pJ;  area in um^2
+65nm,8,write|update|leak,0,2500000,1,energy in pJ;  area in um^2
+
+COMPONENT: lightning_laser
+technology,resolution,action,energy,area,global_cycle_seconds,comment
+65nm,8,read,0.0000399,10000,1,energy in pJ;
+65nm,8,leak|read|write|update,0,10000,1
+
+COMPONENT: lightning_sram
+technology,width,depth,action,energy,area,global_cycle_seconds,comment
+65nm,512,4096,read,0.191,129000,1,energy in pJ;  area in um^2
+65nm,512,4096,write|update,0.191,129000,1
+65nm,512,4096,leak,0,129000,1
+
+COMPONENT: lightning_io
+technology,width,depth,action,energy,area,global_cycle_seconds,comment
+65nm,512,4096,read,0.092,8600,1,energy in pJ;  area in um^2
+65nm,512,4096,write|update|leak,0,8600,1
+
+COMPONENT: lightning_hbm
+technology,width,depth,action,energy,area,global_cycle_seconds,comment
+65nm,512,4096,read,836,81100000 ,1,energy in pJ;  area in um^2
+65nm,512,4096,write|update,836,81100000,1
+65nm,512,4096,leak,0,81100000,1
