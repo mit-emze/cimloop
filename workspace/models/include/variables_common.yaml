@@ -11,8 +11,8 @@ variables:
   # the number of bits in each slice
   _IN_B: ENCODED_INPUT_BITS # Shorthands so the following lines aren't super long
   _W_B: ENCODED_WEIGHT_BITS
-  INPUT_BITS_PER_SLICE: min(DAC_RESOLUTION, _IN_B)
-  WEIGHT_BITS_PER_SLICE: min(CIM_UNIT_WIDTH_CELLS * BITS_PER_CELL, _W_B)
+  INPUT_BITS_PER_SLICE: min(spec.variables.get("DAC_RESOLUTION", _IN_B), _IN_B)
+  WEIGHT_BITS_PER_SLICE: min(spec.variables.get("CIM_UNIT_WIDTH_CELLS", _W_B) * spec.variables.get("BITS_PER_CELL", _W_B), _W_B)
   N_INPUT_SLICES:       ceil(_IN_B / INPUT_BITS_PER_SLICE)
   N_WEIGHT_SLICES:      ceil(_W_B / WEIGHT_BITS_PER_SLICE)
 

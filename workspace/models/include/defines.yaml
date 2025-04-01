@@ -176,6 +176,25 @@ subcomponents_ignore:
     - !Component {name: here_to_fix_a_bug, <<<: *dummy}
     - !Component {name: virtual_bitwise_mac, class: free_mac}
 
+  virtualized_mac_without_mac_unit: &virtualized_mac_without_mac_unit
+    # ===========================================================================
+    - !Container # bitwise_virtualization: Virtualize the bitwise MACs
+      # bitwise_virtualization: Virtualize the bitwise MACs to allow parallel
+      # execution of "bit" operations. This is done because each Timeloop MAC
+      # unit can only do one operation at a time, but when we split the bits
+      # we need many ops per MAC unit.
+      name: 1bit_x_1bit_mac
+      spatial: {meshX: N_VIRTUAL_MACS}
+      constraints:
+        spatial:
+          factors_only: 
+            - ("X=" + str(INPUT_BITS_PER_SLICE))
+            - ("Y=" + str(WEIGHT_BITS_PER_SLICE))
+            - Z=0 # 0 = All
+          permutation: *dimensions
+          split: 999
+    - !Component {name: here_to_fix_a_bug, <<<: *dummy}
+
   # This is the CiM unit that stores weights and computes MACs. Each CiM
   # unit stores a different weight slice of up to CIM_UNIT_WIDTH_CELLS
   # bits. It may also store up to CIM_UNIT_DEPTH_CELLS independently-addressable

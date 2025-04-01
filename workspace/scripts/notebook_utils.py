@@ -105,6 +105,8 @@ def get_important_variables_markdown(name: str):
         "CELL_CONFIG",
         ("GLOBAL_CYCLE_SECONDS", "clock period"),
     ]:
+        if v[0] not in s.variables:
+            continue
         if isinstance(v, tuple):
             pfmat(v[0], s.variables.get(v[0], None), v[1])
         else:

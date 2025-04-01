@@ -2,6 +2,7 @@
 # matched while comparing architectures.
 variables:
   version: 0.4
+  CIM_ARCHITECTURE: True
   # ===========================================================================
   # Set by CiM Processor
   # ===========================================================================

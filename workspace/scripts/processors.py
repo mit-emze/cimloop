@@ -124,6 +124,8 @@ class ArrayProcessor(tl.processors.Processor):
 
         parallel_dataspaces = {ds.name: 1 for ds in prob.shape.data_spaces}
 
+        if not spec.variables["CIM_ARCHITECTURE"]:
+            return
         for cim_container in spec.get_nodes_of_type(ArrayContainer):
             constraints = cim_container.constraints
             cim_container.attributes["_is_CiM"] = True
@@ -191,15 +193,17 @@ class ArrayProcessor(tl.processors.Processor):
         instance.update(max_util_shape)
         for k, e in self.expand_utilization(spec).items():
             instance[k] = instance.get(k, 1) * e
-        instance["M"] *= spec.variables["CIM_UNIT_DEPTH_CELLS"]
+            
+        if spec.variables["CIM_ARCHITECTURE"]:
+            instance["M"] *= spec.variables["CIM_UNIT_DEPTH_CELLS"]
 
-        weight_slice_spill = spec.variables["N_WEIGHT_SLICES"]
-        assert instance["M"] >= weight_slice_spill, (
-            f"To map this problem, {weight_slice_spill} weight slices must "
-            f"be mapped. We could map these to parallel output channels M, but "
-            f"there are only {instance['M']} available."
-        )
-        instance["M"] //= weight_slice_spill
+            weight_slice_spill = spec.variables["N_WEIGHT_SLICES"]
+            assert instance["M"] >= weight_slice_spill, (
+                f"To map this problem, {weight_slice_spill} weight slices must "
+                f"be mapped. We could map these to parallel output channels M, but "
+                f"there are only {instance['M']} available."
+            )
+            instance["M"] //= weight_slice_spill
 
         for l in spec.get_nodes_of_type(tl.arch.Leaf):
             l.pop("max_utilization", None)

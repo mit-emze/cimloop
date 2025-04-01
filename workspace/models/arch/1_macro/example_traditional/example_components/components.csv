@@ -1,0 +1,16 @@
+COMPONENT: smartbuffer_sram_csv
+technology,width,action,energy,area,global_cycle_seconds,comment
+65nm,8,read,1,10000,1,energy in pJ;  area in um^2
+65nm,8,write|update,1.5,10000,1,energy in pJ;  area in um^2
+65nm,8,leak,0,10000,1
+
+COMPONENT: mac_unit_csv
+technology,width,action,energy,area,global_cycle_seconds,comment
+65nm,8,compute,1,10000,1,energy in pJ;  area in um^2
+65nm,8,read|write|update,1,10000,1,energy in pJ;  area in um^2
+65nm,8,leak,0,10000,1
+
+COMPONENT: output_quantizer
+technology,width,action,energy,area,global_cycle_seconds,comment
+65nm,8,read|quantize,5,100000,1,energy in pJ;  area in um^2 # Attach read to the canonical action of the quantizer (quantize)
+65nm,8,leak|write|update,0,10000,1
