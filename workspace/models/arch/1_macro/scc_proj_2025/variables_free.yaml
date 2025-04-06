@@ -1,0 +1,30 @@
+# timeloopfe will include this list in the final model, even if keys are unrecognized
+globals:
+  version: 0.4
+  expression_custom_functions:
+  - helper_functions.py
+
+
+# These variables pertain to various design choices. They do not need to be
+# matched while comparing architectures.
+variables:
+  version: 0.4
+  CIM_ARCHITECTURE: False
+  # ===========================================================================
+  # Encoding-dependent parameters
+  # ===========================================================================
+  QUANTIZE: False # If we don't apply quantization, assume that inputs and outputs
+  # require 2x the bits to represent
+  ENCODED_INPUT_BITS:  INPUT_BITS * (2 if QUANTIZE else 1)
+  ENCODED_WEIGHT_BITS: WEIGHT_BITS
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS * (2 if QUANTIZE else 1)
+
+  INPUT_ENCODING_FUNC: offset_encode_hist  # Unsigned encoding for inputs and weights
+  WEIGHT_ENCODING_FUNC: offset_encode_hist # Unsigned encoding for inputs and weights
+
+  # ===========================================================================
+  # Architecture parameters
+  # ===========================================================================
+  BASE_LATENCY : 1e-9 # ns per cycle
+  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * VOLTAGE_LATENCY_SCALE
+  EXAMPLE_HELPER_FUNCTION_CALL: helper_funcion(1, 2)
