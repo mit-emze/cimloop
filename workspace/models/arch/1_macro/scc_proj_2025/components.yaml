@@ -52,6 +52,31 @@ compound_components:
     - name: update
       << : *write_action # Update is the same as write
  -name: vec_datapath
+     #3xAND gate for selecting mode/ all things always run but just get 0 mults most of the time?
+ 
+     #subcomponents for 8 bit
+     # 32 8bitx8bit multiples
+     # intadder with 32 inputs of size 16bits and 1 output of size 21 bits
+     # intadder with 2 inputs, 24 bit and 21 bit, then 1 output of 24 bits (gated by mode selection)
+
+     # subcomponents for 4 bit
+     # 64 4bitx4bit multiples
+     # intadder with 64 inputs of size 8bits and 1 output of size 14 bits
+     # intadder with 2 inputs, 24 bit and 14 bit, then 1 output of 24 bits (gated by mode selection)
+
+     #subcomponents for vsq
+     #8bitx8bit multiply
+     #skip rounding?
+     #14bitx8bit multiply
+     #22bitx24bit add (gated by mode selection)
+     #skip saturation ?
+     #24 bit output
+
+     #mux for partial sum out
+     
+     
  -name: latch_array
+    # can maybr just model this as an SRAM? idk
  -name: approx_softmax
+  # Big diagram for softmax in doc
  

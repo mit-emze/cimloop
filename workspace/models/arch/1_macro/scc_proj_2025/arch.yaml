@@ -8,7 +8,7 @@ architecture:
     <<<: [*container_defaults]
   - !Component #Input Buffer
     name: B_Buffer
-    <<<: [*component_defaults, *keep_inputs, *keep_outputs, *keep_weights]
+    <<<: [*component_defaults, ]
     subclass: smartbuffer_sram
     attributes:
         depth: 2048
