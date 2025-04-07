@@ -15,7 +15,7 @@ architecture:
         width: 264
         n_banks: 1
         read_bandwidth: 264 #bits/cycle
-        write_bandwith: 264 #bits/cycle
+        write_bandwidth: 264 #bits/cycle
   - !Component # Output Processing
     name: output_buffer
     <<<: [*component_defaults]

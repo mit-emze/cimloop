@@ -51,7 +51,92 @@ compound_components:
         actions: [{name: leak}]
     - name: update
       << : *write_action # Update is the same as write
- -name: vec_datapath
+
+### Reconfigurable Vector Datapaths
+  - name: int8_datapath
+    attributes:
+        technology: ??
+        width: ??
+        depth: ??
+        n_rw_ports: 1
+        global_cycle_seconds: ??
+
+    subcomponents:
+    - name: int8_mac
+      class: intmac
+      attributes:
+          technology: ??
+          global_cycle_seconds: ??
+          width: 8
+    - name: int8_sum
+      class: intadder
+      attributes:
+          n_bits: 24
+          global_cycle_seconds: ??
+          technology: ??
+
+  - name: int4_datapath
+    attributes:
+        technology: ??
+        width: ??
+        depth: ??
+        n_rw_ports: ??
+        global_cycle_seconds: ??
+    subcomponents:
+    - name: int4_mac
+      class: intmac
+      attributes:
+          technology: ??
+          global_cycle_seconds: ??
+          width: 4
+    - name: int4_sum
+      class: intadder
+      attributes:
+          n_bits: 24
+          global_cycle_seconds: ??
+          technology: ??
+
+  - name: int4vsq_datapath
+    attributes:
+        technology: ??
+        width: ??
+        depth: ??
+        n_rw_ports: ??
+        global_cycle_seconds: ??
+    subcomponents:
+    - name: int4_mac
+      class: intmac
+      attributes:
+          technology: ??
+          global_cycle_seconds: ??
+          width: 4
+    - name: int4_sum
+      class: intadder
+      attributes:
+          n_bits: 24
+          global_cycle_seconds: ??
+          technology: ??
+    - name: mult_rounding
+      class: intmultiplier
+      attributes:
+          technology: ??
+          global_cycle_seconds: ??
+          width: 8
+    - name: mult_saturation
+      class: intmultiplier
+      attributes:
+          technology: ??
+          global_cycle_seconds: ??
+          width: 14
+    - name: sum_saturation
+      class: intadder
+      attributes:
+          n_bits: 24
+          global_cycle_seconds: ??
+          technology: ??
+    ## idk how to model rounding or saturation???
+      
+ 
      #3xAND gate for selecting mode/ all things always run but just get 0 mults most of the time?
  
      #subcomponents for 8 bit

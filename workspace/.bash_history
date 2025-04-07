@@ -1,0 +1,1 @@
+accelergy --list-components
