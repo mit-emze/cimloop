@@ -1,7 +1,7 @@
 compound_components:
   version: 0.4         # REQUIRED version number
   classes:
-  - name: smartbuffer_sram_components_dot_yaml
+  - name: smartbuffer_sram_v2
     attributes:
       technology: "must_specify"
       width: "must_specify"
@@ -21,8 +21,9 @@ compound_components:
     
     # We don't need to scale the address generators
     - name: address_generator
-      class: intadder
+      class: aladdin_adder
       attributes:
+        technology: technology
         n_instances: 2 # One for read, one for write
         n_bits: max(1, ceil(log2(depth))) if depth >= 1 else 1
         precision: max(1, ceil(log2(depth))) if depth >= 1 else 1
@@ -79,14 +80,73 @@ compound_components:
  #    # can maybr just model this as an SRAM? idk
  # -name: approx_softmax
  #  # Big diagram for softmax in doc
-  # - name: ppu
-  #  subcomponents:
-  #  - name: matrix_scaler
-  #    class: aladdin_multiplier
-  #    attributes:
-  #       technology: "5nm"
-  #       width_a:    24
-  #       width_b:    12
+  - name: ppu
+    attributes:
+        width: 4
+        depth: 1
+    subcomponents:
+    - name: matrix_scaler #idk if this is supposed to be spatial
+      class: aladdin_multiplier
+      attributes:
+         technology: "5nm"
+         width_a: 24 #partial sum value ?
+         width_b: 8  # scale factor?
+         width: 32 # no clue, just did min number of bits needed to represent 24x8 bits
+         depth: 1
+
+    - name: bias_adder
+      class: aladdin_adder
+      attributes:
+         technology: "5nm" # using smallest aladdin tech size
+         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+         width: 640 # just using only number that is shown
+         depth: 1
+    - name: scale_buffer
+      class: smartbuffer_sram_v2
+      attributes:
+         technology: "5nm"
+         depth: 8
+         width: 256
+         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+    - name: bias_buffer
+      class: smartbuffer_sram_v2
+      attributes:
+         technology: "5nm"
+         depth: 8
+         width: 128
+         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+    actions:
+    - &write_action # act of setting values for buffers
+      name: write #have it called write because you need a read/write
+      subcomponents:
+      - name: scale_buffer
+        actions: [{name: write}]
+      - name: bias_buffer
+        actions: [{name: write}]
+    - name: read
+      subcomponents:
+      - name: scale_buffer
+        actions: [{name: read}]
+      - name: bias_buffer
+        actions: [{name: read}]
+      - name: matrix_scaler
+        actions: [{name: multiply}]
+      - name: bias_adder
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: scale_buffer
+        actions: [{name: leak}]
+      - name: bias_buffer
+        actions: [{name: leak}]
+      - name: matrix_scaler
+        actions: [{name: leak}]
+      - name: bias_adder
+        actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
+    
+  
      
    
  

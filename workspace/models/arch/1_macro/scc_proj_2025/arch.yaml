@@ -10,141 +10,77 @@ architecture:
   - !Component # Output Processing
     name: output_buffer
     <<<: [*component_defaults, *keep_outputs]
-    class: smartbuffer_sram # class provided
+    class: smartbuffer_sram_v2 # class provided
     attributes:
         technology: "5nm"
         depth: 512
         width: 136
-        n_banks: 1
-        read_bandwidth: 136 #bits/cycle
-        write_bandwidth: 136 #bits/cycle
-  - !Component
-    name: ppu_standin
-    <<<: [*component_defaults,*keep_outputs]
-    subclass: aladdin_adder
-    attributes:
-        technology: "40nm" # using smallest neuro-sim tech size
         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-        n_bits: 640 #Just following output bits
   - !Component
-    name: accumulation_latch_array
+    name: ppu
+    <<<: [*component_defaults,*keep_outputs]
+    subclass: ppu
+    attributes:
+        width: 4
+        depth: 1
+    
+  - !Component
+    name: accumulation_collector
     <<<: [*component_defaults,*keep_outputs ]
-    class: smartbuffer_sram
+    class: smartbuffer_sram_v2
     attributes:
         technology: "5nm"
         depth: 16
         width: 384
-        n_banks: 1
-        read_bandwidth: 384 #bits/cycle
-        write_bandwidth: 384 #bits/cycle
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
   - !Component #Input Buffer
     name: B_Buffer
     <<<: [*component_defaults, *keep_inputs]
-    subclass: smartbuffer_sram
+    subclass: smartbuffer_sram_v2
     attributes:
         technology: "5nm"
         depth: 2048
         width: 264
-        n_banks: 1
-        read_bandwidth: 264 #bits/cycle
-        write_bandwidth: 264 #bits/cycle
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
 
   - !Container
     name: A_Data_Bnk
-    spatial: {meshY: 16}
+    spatial: {meshX: 16}
     
   - !Component
     name: A_Buffer
     <<<: [*component_defaults,*keep_weights]
-    class: smartbuffer_sram
+    class: smartbuffer_sram_v2
     attributes:
         technology: "5nm"
         depth: 128
         width: 264
-        n_banks: 1
-        read_bandwidth: 264 #bits/cycle
-        write_bandwidth: 264 #bits/cycle
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
         
   - !Component
     name: A_Reg #update every 16 cycles
     <<<: [*component_defaults,*keep_weights]
     subclass: aladdin_register # comes from Aladdin plug-in, idk if we need to change because they only model 40nm
     attributes:
-      technology: "40nm" # using smallest aladdin tech size
+      technology: "5nm" # using smallest aladdin tech size
       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
       width: 264
-    # constraints:
-    #   temporal:
-    #     factors: [N=16]
+      depth: 1
+    constraints:
+      temporal:
+        factors: [N=16]
     
     
-  # - !Component
-  #   name: Datapath_Bnk1
-  #   class: vec_datapath #custom component
+
   - !Component
     name: vec_mac_standin
     class: mac_unit_csv
     attributes:
-      technology: "65nm"
+      technology: "5nm"
       width: 8
+      depth: 1
       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
 
-  # - !Container
-  #   name: Post_Processing_Unit
-  #   <<<: [*container_defaults,*keep_outputs]
-
-  # - !Component
-  #  name: accumulation_latch_array
-  #  <<<: [*component_defaults, ]
-  #  class: smartbuffer_sram
-  #  spatial: {meshY: 1}
-  #  attributes:
-  #       depth: 1
-  #       width: 384
-  #       n_banks: 1
-  #       read_bandwidth: 384 #bits/cycle
-  #       write_bandwidth: 384 #bits/cycle
-        
-  # - !Component 
-  #   name: matrix_scale
-  #   <<<: [*component_defaults]
-  #   subclass: intmultiplier #From aladdin
-  #   attributes:
-  #       technology: "5nm" #setting lowest allowed aladdin size
-  #       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-  #       width: 640 #Lowkey could be very wrong, only number I saw
-        
-  # - !Component
-  #   name: bias_addition
-  #   <<<: [*component_defaults]
-  #   subclass: intadder
-  #   attributes:
-  #       technology: "7nm" # using smallest neuro-sim tech size
-  #       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-  #       n_bits: 640 #Just following output bits
-
-  # - !Component
-  #   name: extra_mac
-  #   class: mac
-  #   attributes:
-  #     width: 10
-  #     depth: 1
-  #   energy_scale: 1 
-  #   area_scale: 1 
-  # - !Component
-  #   name: scaling_factors_array # custom component
-  #   class: latch_array
-  # - !Component
-  #   name: bias_factors_array # custom component
-  #   class: latch_array
-  # - !Component
-  #   name: ppu_output # custom component
-  #   class: latch_array
-  # - !Component
-  #   name: approx_softmax # make custom component
-  
-  
-   
   
   
         
