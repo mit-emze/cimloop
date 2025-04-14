@@ -112,11 +112,139 @@ compound_components:
     - name: update
       << : *write_action # Update is the same as write
 
-# END SOFTMAX
+          
+  ## int4 datapath
+  - name: int4_datapath
+    attributes:
+        width: 4
+        depth: 1
+        
+    subcomponents:
+    - name: int4_multiplier ## 4x4 multiplier (MAC)
+      class: aladdin_multiplier
+      attributes:
+          technology: "5nm"
+          width_a: 4
+          width_b: 4
+          width: 8
+          depth: 1
+    - name: int4_adder ## adder (MAC)
+      class: aladdin_adder
+      attributes:
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 14
+          depth: 1
+    - name: int4_partialsum ## partial sum after MAC
+      class: aladdin_adder
+      attributes:
+          width: 24
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          technology: "5nm"
+          depth: 1
+          
+    actions:
+    - &write_action
+      name: write
+    - name: read
+      subcomponents:
+      - name: int4_multiplier
+        actions: [{name: multiply, energy_scale: 64}]
+      - name: int4_adder
+        actions: [{name: add, energy_scale: 64}]
+      - name: int4_partialsum
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: int4_multiplier
+        actions: [{name: leak}]
+      - name: int4_adder
+        actions: [{name: leak}]
+      - name: int4_partialsum
+        actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
+
+  ## int4 VSQ datapath
+  - name: int4vsq_datapath
+    attributes:
+        width: 4
+        depth: 1
+        
+    subcomponents:
+    - name: int4vsq_multiplier ## 4x4 multiplier (MAC)
+      class: aladdin_multiplier
+      attributes:
+          technology: "5nm"
+          width_a: 4
+          width_b: 4
+          width: 8
+          depth: 1
+    - name: int4vsq_adder ## adder (MAC)
+      class: aladdin_adder
+      attributes:
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 14
+          depth: 1
+    - name: rounding_multiplication ## 8x8 multipliation before rounding
+      class: aladdin_multiplier 
+      attributes:
+          technology: "5nm"
+          width_a: 8
+          width_b: 8
+          width: 16
+          depth: 1
+    - name: saturation_multiplication ## 14x8 multiplication before saturation
+      class: aladdin_multiplier
+      attributes:
+          technology: "5nm"
+          width_a: 14
+          width_b: 8
+          width: 22
+          depth: 1
+    - name: int4vsq_partialsum ## partial adder
+      class: aladdin_adder
+      attributes:
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 24
+          depth: 1
+
+    actions:
+    - &write_action
+      name: write
+    - name: read
+      subcomponents:
+      - name: int4vsq_multiplier
+        actions: [{name: multiply, energy_scale: 64}]
+      - name: int4vsq_adder
+        actions: [{name: add, energy_scale: 64}]
+      - name: rounding_multiplication
+        actions: [{name: multiply}]
+      - name: saturation_multiplication
+        actions: [{name: multiply}]
+      - name: int4vsq_partialsum
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: int4vsq_multiplier
+        actions: [{name: leak}]
+      - name: int4vsq_adder
+        actions: [{name: leak}]
+      - name: rounding_multiplication
+        actions: [{name: leak}]
+      - name: saturation_multiplication
+        actions: [{name: leak}]
+      - name: int4vsq_partialsum
+        actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
+    ## did not model saturation and rounding
     
+      ## in actions add a aprameter names energy_scale = factor (num of component)
  
- # -name: vec_datapath
- #     #3xAND gate for selecting mode/ all things always run but just get 0 mults most of the time?
+     #3xAND gate for selecting mode/ all things always run but just get 0 mults most of the time?
  
  #     #subcomponents for 8 bit
  #     # 32 8bitx8bit multiples
@@ -136,7 +264,9 @@ compound_components:
  #     #skip saturation ?
  #     #24 bit output
 
- #     #mux for partial sum out
+     #mux for partial sum out
+
+     ## second cell - unspecified (width and depth), or file for outputs (read timeloop mapper - find errors)
      
     
  # -name: latch_array
