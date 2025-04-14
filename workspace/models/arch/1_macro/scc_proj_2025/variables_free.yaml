@@ -25,6 +25,6 @@ variables:
   # ===========================================================================
   # Architecture parameters
   # ===========================================================================
-  BASE_LATENCY : 1e-9 # ns per cycle
-  GLOBAL_CYCLE_SECONDS: BASE_LATENCY * VOLTAGE_LATENCY_SCALE
+  BASE_LATENCY : 1.1e-9 # ns per cycle
+  GLOBAL_CYCLE_SECONDS: 1.1e-9 #BASE_LATENCY * VOLTAGE_LATENCY_SCALE
   EXAMPLE_HELPER_FUNCTION_CALL: helper_funcion(1, 2)
