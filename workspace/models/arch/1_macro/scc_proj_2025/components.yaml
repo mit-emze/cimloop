@@ -52,90 +52,178 @@ compound_components:
     - name: update
       << : *write_action # Update is the same as write
 
-### Reconfigurable Vector Datapaths
-  - name: int8_datapath
+### Reconfigurable Vector Datapaths (each path modeled separately)
+  ## int8 datapath
+  - name: int8_datapath 
     attributes:
-        technology: ??
-        width: ??
-        depth: ??
-        n_rw_ports: 1
-        global_cycle_seconds: ??
+        width: 4
+        depth: 1
 
     subcomponents:
-    - name: int8_mac
-      class: intmac
+    - name: int8_multiplier ## 8x8 multiplier (MAC)
+      class: aladdin_multiplier
       attributes:
-          technology: ??
-          global_cycle_seconds: ??
-          width: 8
-    - name: int8_sum
-      class: intadder
+          technology: "5nm"
+          width_a: 8
+          width_b: 8
+          width: 16
+          depth: 1
+    - name: int8_adder ## adder (MAC)
+      class: aladdin_adder
       attributes:
-          n_bits: 24
-          global_cycle_seconds: ??
-          technology: ??
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 21
+          depth: 1
+    - name: int8_partialsum ## partial sum after MAC
+      class: aladdin_adder
+      attributes:
+          width: 24
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          technology: "5nm"
+          depth: 1
+          
+    actions:
+    - name: read
+      subcomponents:
+      - name: int8_multiplier
+        actions: [{name: multiply, energy_scale: 32}]
+      - name: int8_adder
+        actions: [{name: add, energy_scale: 32}]
+      - name: int8_partialsum
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: int8_multiplier
+        actions: [{name: leak}]
+      - name: int8_adder
+        actions: [{name: leak}]
+      - name: int8_partialsum
+        actions: [{name: leak}]
 
+          
+  ## int4 datapath
   - name: int4_datapath
     attributes:
-        technology: ??
-        width: ??
-        depth: ??
-        n_rw_ports: ??
-        global_cycle_seconds: ??
+        width: 4
+        depth: 1
+        
     subcomponents:
-    - name: int4_mac
-      class: intmac
+    - name: int4_multiplier ## 4x4 multiplier (MAC)
+      class: aladdin_multiplier
       attributes:
-          technology: ??
-          global_cycle_seconds: ??
-          width: 4
-    - name: int4_sum
-      class: intadder
+          technology: "5nm"
+          width_a: 4
+          width_b: 4
+          width: 8
+          depth: 1
+    - name: int4_adder ## adder (MAC)
+      class: aladdin_adder
       attributes:
-          n_bits: 24
-          global_cycle_seconds: ??
-          technology: ??
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 14
+          depth: 1
+    - name: int4_sum ## partial sum after MAC
+      class: aladdin_adder
+      attributes:
+          width: 24
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          technology: "5nm"
+          depth: 1
+          
+    actions:
+    - name: read
+      subcomponents:
+      - name: int4_multiplier
+        actions: [{name: multiply, energy_scale: 64}]
+      - name: int4_adder
+        actions: [{name: add, energy_scale: 64}]
+      - name: int4_partialsum
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: int4_multiplier
+        actions: [{name: leak}]
+      - name: int4_adder
+        actions: [{name: leak}]
+      - name: int4_partialsum
+        actions: [{name: leak}]
 
+  ## int4 VSQ datapath
   - name: int4vsq_datapath
     attributes:
-        technology: ??
-        width: ??
-        depth: ??
-        n_rw_ports: ??
-        global_cycle_seconds: ??
+        width: 4
+        depth: 1
+        
     subcomponents:
-    - name: int4_mac
-      class: intmac
+    - name: int4vsq_multiplier ## 4x4 multiplier (MAC)
+      class: aladdin_multiplier
       attributes:
-          technology: ??
-          global_cycle_seconds: ??
-          width: 4
-    - name: int4_sum
-      class: intadder
-      attributes:
-          n_bits: 24
-          global_cycle_seconds: ??
-          technology: ??
-    - name: mult_rounding
-      class: intmultiplier
-      attributes:
-          technology: ??
-          global_cycle_seconds: ??
+          technology: "5nm"
+          width_a: 4
+          width_b: 4
           width: 8
-    - name: mult_saturation
-      class: intmultiplier
+          depth: 1
+    - name: int4vsq_adder ## adder (MAC)
+      class: aladdin_adder
       attributes:
-          technology: ??
-          global_cycle_seconds: ??
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
           width: 14
-    - name: sum_saturation
-      class: intadder
+          depth: 1
+    - name: rounding_multiplication ## 8x8 multipliation before rounding
+      class: aladdin_multiplier 
       attributes:
-          n_bits: 24
-          global_cycle_seconds: ??
-          technology: ??
-    ## idk how to model rounding or saturation???
-      
+          technology: "5nm"
+          width_a: 8
+          width_b: 8
+          width: 16
+          depth: 1
+    - name: saturation_multiplication ## 14x8 multiplication before saturation
+      class: aladdin_multiplier
+      attributes:
+          technology: "5nm"
+          width_a: 14
+          width_b: 8
+          width: 22
+          depth: 1
+    - name: int4vsq_partialsum ## partial adder
+      class: aladdin_adder
+      attributes:
+          technology: "5nm"
+          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          width: 24
+          depth: 1
+
+    actions:
+    - name: read
+      subcomponents:
+      - name: int4vsq_multiplier
+        actions: [{name: multiply, energy_scale: 64}]
+      - name: int4vsq_adder
+        actions: [{name: add, energy_scale: 64}]
+      - name: rounding_multiplication
+        actions: [{name: multiply}]
+      - name: saturation_multiplication
+        actions: [{name: multiply}]
+      - name: int4vsq_partialsum
+        actions: [{name: add}]
+    - name: leak
+      subcomponents:
+      - name: int4vsq_multiplier
+        actions: [{name: leak}]
+      - name: int4vsq_adder
+        actions: [{name: leak}]
+      - name: rounding_multiplication
+        actions: [{name: leak}]
+      - name: saturation_multiplication
+        actions: [{name: leak}]
+      - name: int4vsq_partialsum
+        actions: [{name: leak}]
+    ## did not model saturation and rounding
+    
+      ## in actions add a aprameter names energy_scale = factor (num of component)
  
      #3xAND gate for selecting mode/ all things always run but just get 0 mults most of the time?
  
@@ -158,6 +246,8 @@ compound_components:
      #24 bit output
 
      #mux for partial sum out
+
+     ## second cell - unspecified (width and depth), or file for outputs (read timeloop mapper - find errors)
      
      
  -name: latch_array
