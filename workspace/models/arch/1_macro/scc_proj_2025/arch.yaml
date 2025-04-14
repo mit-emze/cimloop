@@ -6,6 +6,8 @@ architecture:
   - !Container # Macro top-level
     name: macro
     <<<: [*container_defaults]
+    
+  
   
   - !Component # Output Processing
     name: output_buffer
@@ -16,6 +18,17 @@ architecture:
         depth: 512
         width: 136
         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+        
+  - !Component # Approximate Softmax
+    name: approx_softmax
+    <<<: [*component_defaults, *keep_outputs]
+    class: smartbuffer_sram_v2 # class provided
+    attributes:
+        technology: "5nm"
+        depth: 512
+        width: 136
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+
   - !Component
     name: ppu
     <<<: [*component_defaults,*keep_outputs]
