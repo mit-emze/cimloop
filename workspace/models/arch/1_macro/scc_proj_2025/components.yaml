@@ -55,7 +55,7 @@ compound_components:
 
 
 # SOFTMAX STUFF
-    - name: approx_softmax # for use in the PPU
+  - name: approx_softmax_output # for use in the PPU
     attributes:
         technology: "must_specify"
         precision: "must_specify" # either 4 or 8 bit
@@ -111,8 +111,8 @@ compound_components:
         actions: [{name: leak}]
     - name: update
       << : *write_action # Update is the same as write
-
-          
+    
+              
   ## int4 datapath
   - name: int4_datapath
     attributes:
@@ -146,6 +146,7 @@ compound_components:
     actions:
     - &write_action
       name: write
+      
     - name: read
       subcomponents:
       - name: int4_multiplier
@@ -308,6 +309,14 @@ compound_components:
          depth: 8
          width: 128
          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+
+    - name: approx_softmax
+      class: approx_softmax
+      attributes:
+         technology: "5nm"
+         precision: 4
+         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+
     actions:
     - &write_action # act of setting values for buffers
       name: write #have it called write because you need a read/write
@@ -316,6 +325,8 @@ compound_components:
         actions: [{name: write}]
       - name: bias_buffer
         actions: [{name: write}]
+      - name: approx_softmax
+        actions: [{name:write}]
     - name: read
       subcomponents:
       - name: scale_buffer
@@ -326,6 +337,8 @@ compound_components:
         actions: [{name: multiply}]
       - name: bias_adder
         actions: [{name: add}]
+      - name: approx_softmax
+        actions: [{name:read}]
     - name: leak
       subcomponents:
       - name: scale_buffer
@@ -336,6 +349,8 @@ compound_components:
         actions: [{name: leak}]
       - name: bias_adder
         actions: [{name: leak}]
+      - name: approx_softmax
+        actions: [{name:leak}]
     - name: update
       << : *write_action # Update is the same as write
     
