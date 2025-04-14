@@ -69,15 +69,16 @@ architecture:
     constraints:
       temporal:
         factors: [N=16]
-    
-    
+
 
   - !Component
-    name: vec_mac_standin
-    class: mac_unit_csv
+    name: vec_mac
+    <<<: [*component_defaults, *keep_outputs]
+    class: compute
+    subclass: int4_datapath
     attributes:
       technology: "5nm"
-      width: 8
+      width: 4
       depth: 1
       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
 

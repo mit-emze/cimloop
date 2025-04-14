@@ -85,6 +85,8 @@ compound_components:
           depth: 1
           
     actions:
+    - &write_action
+      name: write 
     - name: read
       subcomponents:
       - name: int8_multiplier
@@ -101,6 +103,8 @@ compound_components:
         actions: [{name: leak}]
       - name: int8_partialsum
         actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
 
           
   ## int4 datapath
@@ -125,7 +129,7 @@ compound_components:
           global_cycle_seconds: GLOBAL_CYCLE_SECONDS
           width: 14
           depth: 1
-    - name: int4_sum ## partial sum after MAC
+    - name: int4_partialsum ## partial sum after MAC
       class: aladdin_adder
       attributes:
           width: 24
@@ -134,6 +138,8 @@ compound_components:
           depth: 1
           
     actions:
+    - &write_action
+      name: write
     - name: read
       subcomponents:
       - name: int4_multiplier
@@ -150,6 +156,8 @@ compound_components:
         actions: [{name: leak}]
       - name: int4_partialsum
         actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
 
   ## int4 VSQ datapath
   - name: int4vsq_datapath
@@ -198,6 +206,8 @@ compound_components:
           depth: 1
 
     actions:
+    - &write_action
+      name: write
     - name: read
       subcomponents:
       - name: int4vsq_multiplier
@@ -222,6 +232,8 @@ compound_components:
         actions: [{name: leak}]
       - name: int4vsq_partialsum
         actions: [{name: leak}]
+    - name: update
+      << : *write_action # Update is the same as write
     ## did not model saturation and rounding
     
       ## in actions add a aprameter names energy_scale = factor (num of component)
