@@ -7,8 +7,8 @@ architecture:
     name: macro
     <<<: [*container_defaults]
     attributes:
-        technology: "5nm"
-        precision: 4 # either 4 or 8 bits
+        technology: TECHNOLOGY
+        precision: PRECISION # either 4 or 8 bits
         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
 
         
@@ -17,22 +17,18 @@ architecture:
     <<<: [*component_defaults, *keep_inputs]
     subclass: smartbuffer_sram_v2
     attributes:
-        technology: technology
         depth: 2048
         width: 264
-        global_cycle_seconds: global_cycle_seconds
-  
-
+        n_rw_ports: 2 # dual port
 
   - !Component # Output Processing
     name: output_buffer
     <<<: [*component_defaults, *keep_outputs]
     class: smartbuffer_sram_v2 # class provided
     attributes:
-        technology: technology
         depth: 512
         width: 136
-        global_cycle_seconds: global_cycle_seconds
+        n_rw_ports: 2 # dual port
 
 
   - !Component
@@ -40,11 +36,8 @@ architecture:
     <<<: [*component_defaults,*keep_outputs]
     subclass: ppu
     attributes:
-        technology: technology
         depth: 512
         width: 136
-        precision: precision
-        global_cycle_seconds: global_cycle_seconds
 
     
   - !Component
@@ -52,10 +45,8 @@ architecture:
     <<<: [*component_defaults,*keep_outputs ]
     class: smartbuffer_sram_v2
     attributes:
-        technology: technology
         depth: 16
         width: 384
-        global_cycle_seconds: global_cycle_seconds
         
 
   - !Container
@@ -67,18 +58,17 @@ architecture:
     <<<: [*component_defaults,*keep_weights]
     class: smartbuffer_sram_v2
     attributes:
-        technology: technology
         depth: 128
         width: 264
-        global_cycle_seconds: global_cycle_seconds
+        n_rw_ports: 2 # dual port
         
   - !Component
     name: A_Reg #update every 16 cycles
     <<<: [*component_defaults,*keep_weights]
     subclass: aladdin_register # comes from Aladdin plug-in, idk if we need to change because they only model 40nm
     attributes:
-      technology: technology # using smallest aladdin tech size
-      global_cycle_seconds: global_cycle_seconds
+      technology: TECHNOLOGY # using smallest aladdin tech size
+      global_cycle_seconds: GLOBAL_CYCLE_SECONDS
       width: 264
       depth: 1
     constraints:
@@ -91,9 +81,6 @@ architecture:
     <<<: [*component_defaults]
     class: compute
     subclass: int4_datapath
-    attributes:
-      technology: technology
-      global_cycle_seconds: global_cycle_seconds
 
   
   

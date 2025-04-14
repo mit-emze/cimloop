@@ -1,13 +1,14 @@
 compound_components:
   version: 0.4         # REQUIRED version number
   classes:
+  ### CORRECT
   - name: smartbuffer_sram_v2
     attributes:
-      technology: "must_specify"
+      technology: TECHNOLOGY
       width: "must_specify"
       depth: "must_specify"
       n_rw_ports: 1
-      global_cycle_seconds: "must_specify"
+      global_cycle_seconds: GLOBAL_CYCLE_SECONDS
 
     subcomponents:
     - name: storage
@@ -54,59 +55,58 @@ compound_components:
       << : *write_action # Update is the same as write
 
 
-# SOFTMAX STUFF
-  - name: approx_softmax_output # for use in the PPU
+    # SOFTMAX STUFF
+  - name: approx_softmax # for use in the PPU
     attributes:
-        technology: "must_specify"
-        precision: "must_specify" # either 4 or 8 bit
-        width: 256//precision
+        width: 256//PRECISION
         depth: 1
+        technology: TECHNOLOGY
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+        precision: PRECISION
+        voltage: VOLTAGE
     subcomponents:
     - name: adds 
       class: aladdin_adder
       attributes:
         technology: technology
+        voltage: voltage
         n_instances: ceil(log2(width)) + width + 2 #the number of adds that I saw
         n_bits: precision
         global_cycle_seconds: global_cycle_seconds
-    - name: shifts 
-      class: aladdin_shifter
-      attributes:
-        technology: technology
-        n_instances: width + 1 #the number of shifys that I saw
-        n_bits: precision
-        global_cycle_seconds: global_cycle_seconds
+    # - name: shifts 
+    #   class: aladdin_shifter
+    #   attributes:
+    #     technology: technology
+    #     voltage: voltage
+    #     n_instances: width + 1 #the number of shifts that I saw
+    #     n_bits: precision
+    #     global_cycle_seconds: global_cycle_seconds
     - name: comparisons 
       class: aladdin_comparator
       attributes:
         technology: technology
+        voltage: voltage
         n_instances: ceil(log2(width)) + 1 #the number of comparisons that I saw
         n_bits: precision
         global_cycle_seconds: global_cycle_seconds
     actions:
     - &write_action 
       name: write #have it called write because you need a read/write
-      subcomponents:
-      - name: adds
-        actions: [{name: write}]
-      - name: shifts
-        actions: [{name: write}]
-      - name: comparisons
-        actions: [{name: write}]
+      subcomponents: []
     - name: read
       subcomponents:
       - name: adds
         actions: [{name: read}]
-      - name: shifts
-        actions: [{name: read}]
+      # - name: shifts
+      #   actions: [{name: read}]
       - name: comparisons
         actions: [{name: read}]
     - name: leak
       subcomponents:
       - name: adds
         actions: [{name: leak}]
-      - name: shifts
-        actions: [{name: leak}]
+      # - name: shifts
+      #   actions: [{name: leak}]
       - name: comparisons
         actions: [{name: leak}]
     - name: update
@@ -118,36 +118,43 @@ compound_components:
     attributes:
         width: 4
         depth: 1
+        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+        technology: TECHNOLOGY
         
     subcomponents:
     - name: int4_multiplier ## 4x4 multiplier (MAC)
       class: aladdin_multiplier
       attributes:
-          technology: "5nm"
+          technology: technology
           width_a: 4
           width_b: 4
           width: 8
-          depth: 1
     - name: int4_adder ## adder (MAC)
       class: aladdin_adder
       attributes:
-          technology: "5nm"
-          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          technology: technology
+          global_cycle_seconds: global_cycle_seconds
           width: 14
-          depth: 1
     - name: int4_partialsum ## partial sum after MAC
       class: aladdin_adder
       attributes:
           width: 24
-          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-          technology: "5nm"
+          global_cycle_seconds: global_cycle_seconds
+          technology: technology
           depth: 1
           
     actions:
     - &write_action
       name: write
-      
-    - name: read
+      subcomponents: 
+      - name: int4_multiplier
+        actions: [{name: write, energy_scale: 64}]
+      - name: int4_adder
+        actions: [{name: write, energy_scale: 64}]
+      - name: int4_partialsum
+        actions: [{name: write}]
+    - &read_action
+      name: read
       subcomponents:
       - name: int4_multiplier
         actions: [{name: multiply, energy_scale: 64}]
@@ -165,83 +172,85 @@ compound_components:
         actions: [{name: leak}]
     - name: update
       << : *write_action # Update is the same as write
+    - name: compute
+      << : *read_action
 
   ## int4 VSQ datapath
-  - name: int4vsq_datapath
-    attributes:
-        width: 4
-        depth: 1
+  # - name: int4vsq_datapath
+  #   attributes:
+  #       width: 4
+  #       depth: 1
         
-    subcomponents:
-    - name: int4vsq_multiplier ## 4x4 multiplier (MAC)
-      class: aladdin_multiplier
-      attributes:
-          technology: "5nm"
-          width_a: 4
-          width_b: 4
-          width: 8
-          depth: 1
-    - name: int4vsq_adder ## adder (MAC)
-      class: aladdin_adder
-      attributes:
-          technology: "5nm"
-          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-          width: 14
-          depth: 1
-    - name: rounding_multiplication ## 8x8 multipliation before rounding
-      class: aladdin_multiplier 
-      attributes:
-          technology: "5nm"
-          width_a: 8
-          width_b: 8
-          width: 16
-          depth: 1
-    - name: saturation_multiplication ## 14x8 multiplication before saturation
-      class: aladdin_multiplier
-      attributes:
-          technology: "5nm"
-          width_a: 14
-          width_b: 8
-          width: 22
-          depth: 1
-    - name: int4vsq_partialsum ## partial adder
-      class: aladdin_adder
-      attributes:
-          technology: "5nm"
-          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-          width: 24
-          depth: 1
+  #   subcomponents:
+  #   - name: int4vsq_multiplier ## 4x4 multiplier (MAC)
+  #     class: aladdin_multiplier
+  #     attributes:
+  #         technology: TECHNOLOGY
+  #         width_a: 4
+  #         width_b: 4
+  #         width: 8
+  #         depth: 1
+  #   - name: int4vsq_adder ## adder (MAC)
+  #     class: aladdin_adder
+  #     attributes:
+  #         technology: TECHNOLOGY
+  #         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+  #         width: 14
+  #         depth: 1
+  #   - name: rounding_multiplication ## 8x8 multipliation before rounding
+  #     class: aladdin_multiplier 
+  #     attributes:
+  #         technology: TECHNOLOGY
+  #         width_a: 8
+  #         width_b: 8
+  #         width: 16
+  #         depth: 1
+  #   - name: saturation_multiplication ## 14x8 multiplication before saturation
+  #     class: aladdin_multiplier
+  #     attributes:
+  #         technology: TECHNOLOGY
+  #         width_a: 14
+  #         width_b: 8
+  #         width: 22
+  #         depth: 1
+  #   - name: int4vsq_partialsum ## partial adder
+  #     class: aladdin_adder
+  #     attributes:
+  #         technology: TECHNOLOGY
+  #         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+  #         width: 24
+  #         depth: 1
 
-    actions:
-    - &write_action
-      name: write
-    - name: read
-      subcomponents:
-      - name: int4vsq_multiplier
-        actions: [{name: multiply, energy_scale: 64}]
-      - name: int4vsq_adder
-        actions: [{name: add, energy_scale: 64}]
-      - name: rounding_multiplication
-        actions: [{name: multiply}]
-      - name: saturation_multiplication
-        actions: [{name: multiply}]
-      - name: int4vsq_partialsum
-        actions: [{name: add}]
-    - name: leak
-      subcomponents:
-      - name: int4vsq_multiplier
-        actions: [{name: leak}]
-      - name: int4vsq_adder
-        actions: [{name: leak}]
-      - name: rounding_multiplication
-        actions: [{name: leak}]
-      - name: saturation_multiplication
-        actions: [{name: leak}]
-      - name: int4vsq_partialsum
-        actions: [{name: leak}]
-    - name: update
-      << : *write_action # Update is the same as write
-    ## did not model saturation and rounding
+  #   actions:
+  #   - &write_action
+  #     name: write
+  #   - name: read
+  #     subcomponents:
+  #     - name: int4vsq_multiplier
+  #       actions: [{name: multiply, energy_scale: 64}]
+  #     - name: int4vsq_adder
+  #       actions: [{name: add, energy_scale: 64}]
+  #     - name: rounding_multiplication
+  #       actions: [{name: multiply}]
+  #     - name: saturation_multiplication
+  #       actions: [{name: multiply}]
+  #     - name: int4vsq_partialsum
+  #       actions: [{name: add}]
+  #   - name: leak
+  #     subcomponents:
+  #     - name: int4vsq_multiplier
+  #       actions: [{name: leak}]
+  #     - name: int4vsq_adder
+  #       actions: [{name: leak}]
+  #     - name: rounding_multiplication
+  #       actions: [{name: leak}]
+  #     - name: saturation_multiplication
+  #       actions: [{name: leak}]
+  #     - name: int4vsq_partialsum
+  #       actions: [{name: leak}]
+  #   - name: update
+  #     << : *write_action # Update is the same as write
+  #   ## did not model saturation and rounding
     
       ## in actions add a aprameter names energy_scale = factor (num of component)
  
@@ -282,40 +291,30 @@ compound_components:
     - name: matrix_scaler #idk if this is supposed to be spatial
       class: aladdin_multiplier
       attributes:
-         technology: "5nm"
+         technology: TECHNOLOGY
          width_a: 24 #partial sum value ?
          width_b: 8  # scale factor?
          width: 32 # no clue, just did min number of bits needed to represent 24x8 bits
-         depth: 1
-
     - name: bias_adder
       class: aladdin_adder
       attributes:
-         technology: "5nm" # using smallest aladdin tech size
+         technology: TECHNOLOGY # using smallest aladdin tech size
          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
          width: 640 # just using only number that is shown
-         depth: 1
     - name: scale_buffer
       class: smartbuffer_sram_v2
       attributes:
-         technology: "5nm"
          depth: 8
          width: 256
-         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
     - name: bias_buffer
       class: smartbuffer_sram_v2
       attributes:
-         technology: "5nm"
          depth: 8
          width: 128
-         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-
     - name: approx_softmax
       class: approx_softmax
       attributes:
-         technology: "5nm"
-         precision: 4
-         global_cycle_seconds: GLOBAL_CYCLE_SECONDS
+          depth: 1
 
     actions:
     - &write_action # act of setting values for buffers
@@ -326,7 +325,7 @@ compound_components:
       - name: bias_buffer
         actions: [{name: write}]
       - name: approx_softmax
-        actions: [{name:write}]
+        actions: [{name: write}]
     - name: read
       subcomponents:
       - name: scale_buffer
@@ -338,7 +337,7 @@ compound_components:
       - name: bias_adder
         actions: [{name: add}]
       - name: approx_softmax
-        actions: [{name:read}]
+        actions: [{name: read}]
     - name: leak
       subcomponents:
       - name: scale_buffer
@@ -350,9 +349,10 @@ compound_components:
       - name: bias_adder
         actions: [{name: leak}]
       - name: approx_softmax
-        actions: [{name:leak}]
+        actions: [{name: leak}]
     - name: update
       << : *write_action # Update is the same as write
+      
     
   
      

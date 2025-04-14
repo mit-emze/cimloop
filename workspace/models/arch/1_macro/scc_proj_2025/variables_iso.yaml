@@ -27,6 +27,7 @@ variables:
 
   # Circuits ------------------------------------------------------------------
   VOLTAGE: 0.67 #voltage used to generate 1.1ns clock
-  TECHNOLOGY: 5 # nm
+  TECHNOLOGY: "5nm"
   VOLTAGE_ENERGY_SCALE: (VOLTAGE / 1) ** 2
   VOLTAGE_LATENCY_SCALE: 1 / VOLTAGE
+  PRECISION: 4 # 4 bits
