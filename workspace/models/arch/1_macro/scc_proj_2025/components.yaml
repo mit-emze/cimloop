@@ -71,7 +71,7 @@ compound_components:
         technology: technology
         voltage: voltage
         n_instances: ceil(log2(width)) + width + 2 #the number of adds that I saw
-        n_bits: precision
+        width: precision
         global_cycle_seconds: global_cycle_seconds
     # - name: shifts 
     #   class: aladdin_shifter
@@ -79,7 +79,7 @@ compound_components:
     #     technology: technology
     #     voltage: voltage
     #     n_instances: width + 1 #the number of shifts that I saw
-    #     n_bits: precision
+    #     width: precision
     #     global_cycle_seconds: global_cycle_seconds
     - name: comparisons 
       class: aladdin_comparator
@@ -87,7 +87,7 @@ compound_components:
         technology: technology
         voltage: voltage
         n_instances: ceil(log2(width)) + 1 #the number of comparisons that I saw
-        n_bits: precision
+        width: precision
         global_cycle_seconds: global_cycle_seconds
     actions:
     - &write_action 
@@ -148,20 +148,20 @@ compound_components:
       name: write
       subcomponents: 
       - name: int4_multiplier
-        actions: [{name: write, energy_scale: 64}]
-      - name: int4_adder
-        actions: [{name: write, energy_scale: 64}]
-      - name: int4_partialsum
         actions: [{name: write}]
+      - name: int4_adder
+        actions: [{name: write}]
+      - name: int4_partialsum
+        actions: [{name: write, energy_scale: 1/64}]
     - &read_action
       name: read
       subcomponents:
       - name: int4_multiplier
-        actions: [{name: multiply, energy_scale: 64}]
+        actions: [{name: multiply}]
       - name: int4_adder
-        actions: [{name: add, energy_scale: 64}]
-      - name: int4_partialsum
         actions: [{name: add}]
+      - name: int4_partialsum
+        actions: [{name: add, energy_scale: 1/64}]
     - name: leak
       subcomponents:
       - name: int4_multiplier
@@ -169,7 +169,7 @@ compound_components:
       - name: int4_adder
         actions: [{name: leak}]
       - name: int4_partialsum
-        actions: [{name: leak}]
+        actions: [{name: leak, energy_scale: 1/64}]
     - name: update
       << : *write_action # Update is the same as write
     - name: compute
@@ -295,12 +295,14 @@ compound_components:
          width_a: 24 #partial sum value ?
          width_b: 8  # scale factor?
          width: 32 # no clue, just did min number of bits needed to represent 24x8 bits
+         depth: 1
     - name: bias_adder
       class: aladdin_adder
       attributes:
          technology: TECHNOLOGY # using smallest aladdin tech size
          global_cycle_seconds: GLOBAL_CYCLE_SECONDS
          width: 640 # just using only number that is shown
+         depth: 1
     - name: scale_buffer
       class: smartbuffer_sram_v2
       attributes:
@@ -313,8 +315,6 @@ compound_components:
          width: 128
     - name: approx_softmax
       class: approx_softmax
-      attributes:
-          depth: 1
 
     actions:
     - &write_action # act of setting values for buffers

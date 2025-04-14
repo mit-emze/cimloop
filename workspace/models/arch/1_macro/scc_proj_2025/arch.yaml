@@ -6,20 +6,7 @@ architecture:
   - !Container # Macro top-level
     name: macro
     <<<: [*container_defaults]
-    attributes:
-        technology: TECHNOLOGY
-        precision: PRECISION # either 4 or 8 bits
-        global_cycle_seconds: GLOBAL_CYCLE_SECONDS
-
-        
-  - !Component #Input Buffer
-    name: B_Buffer
-    <<<: [*component_defaults, *keep_inputs]
-    subclass: smartbuffer_sram_v2
-    attributes:
-        depth: 2048
-        width: 264
-        n_rw_ports: 2 # dual port
+    
 
   - !Component # Output Processing
     name: output_buffer
@@ -28,18 +15,16 @@ architecture:
     attributes:
         depth: 512
         width: 136
-        n_rw_ports: 2 # dual port
-
+        n_rw_ports: 1 # dual port
 
   - !Component
     name: ppu
-    <<<: [*component_defaults,*keep_outputs]
+    <<<: [*component_defaults, *keep_outputs, *no_coalesce]
     subclass: ppu
     attributes:
-        depth: 512
-        width: 136
+        depth: 4
+        width: 1
 
-    
   - !Component
     name: accumulation_collector
     <<<: [*component_defaults,*keep_outputs ]
@@ -47,6 +32,15 @@ architecture:
     attributes:
         depth: 16
         width: 384
+  
+  - !Component #Input Buffer
+    name: B_Buffer
+    <<<: [*component_defaults, *keep_inputs]
+    subclass: smartbuffer_sram_v2
+    attributes:
+        depth: 2048
+        width: 264
+        n_rw_ports: 1 # dual port
         
 
   - !Container
@@ -60,7 +54,7 @@ architecture:
     attributes:
         depth: 128
         width: 264
-        n_rw_ports: 2 # dual port
+        n_rw_ports: 1 # dual port
         
   - !Component
     name: A_Reg #update every 16 cycles
@@ -74,14 +68,28 @@ architecture:
     constraints:
       temporal:
         factors: [N=16]
-
-
+        
+  # - !Hierarchical
+  #   nodes: *virtualized_mac_without_mac_unit
+  - !Container
+    name: MAC_UNIT
+    spatial: {meshX: 64}
   - !Component
     name: vec_mac
-    <<<: [*component_defaults]
     class: compute
     subclass: int4_datapath
-
+    # energy_scale: 1/N_VIRTUAL_MACS
+    # area_scale: 1/N_VIRTUAL_MACS
+    
+  # - !Component
+  #    name: vec_mac_standin
+  #    class: mac_unit_csv
+  #    attributes:
+  #       technology: "5nm"
+  #       width: 8
+  #       depth: 1
+  #       rmw_first_update: false
+  #       global_cycle_seconds: GLOBAL_CYCLE_SECONDS
   
   
         
