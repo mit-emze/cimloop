@@ -1,0 +1,15 @@
+# Create a custom workload file: nestquant_workload.yaml
+problem:
+  <<<: *problem_base
+  
+  name: "NestQuant Workload"
+  
+  instance:
+    N: 1                  # Batch size 
+    X: 16                 # Full-precision input bits
+    C: 8                  # Input vector dimension = 8
+    Y: 8                  # Quantized weight bits
+    M: 8                  # Output vector dimension = 8
+    
+  # Add custom data movement patterns that reflect
+  # the block-wise processing and codebook selection
