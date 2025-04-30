@@ -15,9 +15,9 @@ variables:
   # ===========================================================================
   QUANTIZE: False # If we don't apply quantization, assume that inputs and outputs
   # require 2x the bits to represent
-  ENCODED_INPUT_BITS:  INPUT_BITS * (2 if QUANTIZE else 1)
+  ENCODED_INPUT_BITS:  INPUT_BITS * (2 if not QUANTIZE else 1)
   ENCODED_WEIGHT_BITS: WEIGHT_BITS
-  ENCODED_OUTPUT_BITS: OUTPUT_BITS * (2 if QUANTIZE else 1)
+  ENCODED_OUTPUT_BITS: OUTPUT_BITS * (2 if not QUANTIZE else 1)
 
   INPUT_ENCODING_FUNC: offset_encode_hist  # Unsigned encoding for inputs and weights
   WEIGHT_ENCODING_FUNC: offset_encode_hist # Unsigned encoding for inputs and weights

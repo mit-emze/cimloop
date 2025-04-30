@@ -15,11 +15,13 @@ def test_area_energy_breakdown():
     This example architecture doesn't have a suite of tests, but you may
     look at the other example architectures for inspiration.        
     """
-    results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
+    # results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
+    layer_path = utl.path_from_model_dir(f"workloads/llm/gemv.yaml")
 
     results = utl.parallel_test(
         utl.delayed(utl.quick_run)(
             macro=MACRO_NAME,
+            layer=layer_path,
             variables=dict(
                 QUANTIZE=q,
             ),
