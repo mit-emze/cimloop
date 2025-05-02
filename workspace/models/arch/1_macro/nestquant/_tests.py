@@ -16,15 +16,17 @@ def test_area_energy_breakdown():
     look at the other example architectures for inspiration.        
     """
     # results = utl.single_test(utl.quick_run(macro=MACRO_NAME))
-    layer_path = utl.path_from_model_dir(f"workloads/llm/gemv.yaml")
+    layer_path = utl.path_from_model_dir(f"workloads/llm/gemm.yaml")
     print("Running on layer", layer_path)
 
     results = utl.parallel_test(
-        utl.delayed(utl.quick_run)(
+        utl.delayed(utl.run_layer)(
             macro=MACRO_NAME,
+            system="_none",
             layer=layer_path,
             variables=dict(
                 QUANTIZE=q,
+            
             ),
         )
         for q in [False, True]

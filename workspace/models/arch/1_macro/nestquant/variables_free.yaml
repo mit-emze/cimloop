@@ -13,7 +13,7 @@ variables:
   # ===========================================================================
   # Encoding-dependent parameters
   # ===========================================================================
-  QUANTIZE: False # If we don't apply quantization, assume that inputs and outputs
+  QUANTIZE: True
   # require 2x the bits to represent
   ENCODED_INPUT_BITS: 8
   ENCODED_WEIGHT_BITS: 4

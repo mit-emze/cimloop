@@ -56,9 +56,9 @@ architecture:
     subclass: smartbuffer_sram
     attributes:
       depth: 192  # Same as weights_spad for consistency
-      width: 8  # 8-bit quantization
-      read_bandwidth: 16 # bits/cycle
-      write_bandwidth: 16 # bits/cycle
+      width: 4  # 8-bit quantization
+      read_bandwidth: 32 # bits/cycle
+      write_bandwidth: 32 # bits/cycle
       datawidth: 1  # Quantized representation is compact
     constraints:
       temporal:
