@@ -19,18 +19,15 @@ def test_area_energy_breakdown():
     layer_path = utl.path_from_model_dir(f"workloads/llm/gemm.yaml")
     print("Running on layer", layer_path)
 
-    results = utl.parallel_test(
-        utl.delayed(utl.run_layer)(
+    results = utl.run_layer(
             macro=MACRO_NAME,
             system="_none",
             layer=layer_path,
             variables=dict(
-                QUANTIZE=q,
+                QUANTIZE=True,
             
             ),
         )
-        for q in [False, True]
-    )
     results.clear_zero_areas()
     results.clear_zero_energies()
     return results

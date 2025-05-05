@@ -32,7 +32,6 @@ architecture:
       n_banks: 32
       read_bandwidth: 128 # bits/cycle
       write_bandwidth: 128 # bits/cycle
-      datawidth: 8//ENCODED_WEIGHT_BITS if QUANTIZE else 8//WEIGHT_BITS
   - !Container # Each column stores a different weight slice. Columns share inputs.
     name: PE_column
     <<<: [*container_defaults, *spatial_must_reuse_inputs]
@@ -51,14 +50,6 @@ architecture:
         split: 0
         factors: [N=1, P=1, Q=1, R=1]
     max_utilization: {spatial: {factors: [('C=' + str(PE.get_fanout()))]}}
-    
-  - !Component
-    name: weight_quantize
-    <<<: [*component_defaults, *keep_weights, *no_coalesce]
-    subclass: weight_quantizer
-    attributes:
-      width: 32
-      depth: INF
 
   - !Component # Input scratchpad
     name: ifmap_spad
@@ -81,9 +72,9 @@ architecture:
     attributes:
       depth: 192
       width: 16
-      datawidth: 2
       read_bandwidth: 16 # bits/cycle
       write_bandwidth: 16 # bits/cycle
+      datawidth: 2
     constraints:
       temporal:
         permutation: [N, M, P, Q, S, C, R]
@@ -98,10 +89,6 @@ architecture:
       width: 16
       read_bandwidth: 16 # bits/cycle
       write_bandwidth: 16 # bits/cycle
-      # If a scratchpad stores unquantized data and we're quantizing later, we may
-      # need 2x the bits to store each value. Assume psums are not quantized until
-      # after the psum scratchpad.
-      datawidth: 2 if QUANTIZE else 1
     constraints:
       temporal:
         permutation: [N, C, P, Q, R, S, M] 
