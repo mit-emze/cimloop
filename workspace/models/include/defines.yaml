@@ -15,7 +15,7 @@ helpful_macros_ignore:
 
 - &component_defaults
   class: dummy_storage
-  attributes: {datawidth: 1}
+  attributes: {datawidth: 1, width: 1}
   constraints:
     temporal:
       rmw_first_update: ['*'] # If this is not here, Timeloop skips the first read-modify-write with a "fill".
