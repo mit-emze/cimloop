@@ -47,14 +47,15 @@ class MacroOutputStats(tl.output_parsing.OutputStats):
         output_stats: tl.output_parsing.OutputStats, scale_computes: bool = True
     ):
         return MacroOutputStats(
-            output_stats.percent_utilization,
-            output_stats.computes,
-            output_stats.cycles,
-            output_stats.cycle_seconds,
-            output_stats.per_component_energy,
-            output_stats.per_component_area,
-            output_stats.variables,
-            output_stats.mapping,
+            percent_utilization=output_stats.percent_utilization,
+            computes=output_stats.computes,
+            cycles=output_stats.cycles,
+            cycle_seconds=output_stats.cycle_seconds,
+            per_component_energy=output_stats.per_component_energy,
+            per_component_area=output_stats.per_component_area,
+            variables=output_stats.variables,
+            accesses={},#output_stats.accesses,
+            mapping=output_stats.mapping,
             scale_computes=scale_computes,
         )
 
@@ -64,7 +65,6 @@ class MacroOutputStats(tl.output_parsing.OutputStats):
             tl.output_parsing.OutputStats.aggregate(*args, **kwargs),
             scale_computes=False,
         )
-
     @staticmethod
     def aggregate_by(*args, **kwargs):
         return MacroOutputStatsList(
