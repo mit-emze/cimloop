@@ -84,7 +84,7 @@ architecture:
     name: adc
     <<<: [*component_defaults, *keep_outputs, *no_coalesce]
     subclass: adc
-    attributes: {<<<: *cim_component_attributes}
+    attributes: {<<<: *cim_component_attributes, width: ENCODED_OUTPUT_BITS}
 
   - !Component # TIA converts analog current to voltage for ADC
     name: TIA
