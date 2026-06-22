@@ -1,3 +1,19 @@
+> [!WARNING]
+> **This repository is no longer maintained.** CiMLoop has moved to the
+> [AccelForge repository](https://github.com/Accelergy-Project/accelforge),
+> where all models are now maintained and many improvements are implemented.
+>
+> **Please use AccelForge for all future work.**
+>
+> As part of the move, several underlying tools changed:
+>
+> | Was | Now |
+> |-----|-----|
+> | Timeloop | [AccelForge](https://github.com/Accelergy-Project/accelforge) |
+> | Accelergy | [hwcomponents](https://github.com/Accelergy-Project/hwcomponents) |
+> | CiMLoop component models | [hwcomponents-library](https://github.com/Accelergy-Project/hwcomponents-library) and [hwcomponents-neurosim](https://github.com/Accelergy-Project/hwcomponents-neurosim) |
+> The instructions below are kept for archival and reproducibility only.
+
 # CiMLoop (Timeloop+Accelergy v4)
 
 Welcome to the repository for "CiMLoop: A Flexible, Accurate, and Fast
