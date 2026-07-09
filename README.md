@@ -1,17 +1,16 @@
 > [!WARNING]
-> **This repository is no longer maintained.** CiMLoop has moved to the
-> [AccelForge repository](https://github.com/Accelergy-Project/accelforge),
-> where all models are now maintained and many improvements are implemented.
+> **This repository is no longer maintained.** The CiMLoop architecture models have moved to the
+> [AccelForge](https://github.com/Accelergy-Project/accelforge), and CiMLoop component models have moved to [HWComponents](https://github.com/Accelergy-Project/hwcomponents).
 >
-> **Please use AccelForge for all future work.**
+> **Please use AccelForge and HWComponents for all future work.**
 >
 > As part of the move, several underlying tools changed:
 >
 > | Was | Now |
 > |-----|-----|
 > | Timeloop | [AccelForge](https://github.com/Accelergy-Project/accelforge) |
-> | Accelergy | [hwcomponents](https://github.com/Accelergy-Project/hwcomponents) |
-> | CiMLoop component models | [hwcomponents-library](https://github.com/Accelergy-Project/hwcomponents-library) and [hwcomponents-neurosim](https://github.com/Accelergy-Project/hwcomponents-neurosim) |
+> | Accelergy | [HWComponents](https://github.com/Accelergy-Project/hwcomponents) |
+> | CiMLoop component models | [HWComponents-Library](https://github.com/Accelergy-Project/hwcomponents-library) and [HWComponents-Neurosim](https://github.com/Accelergy-Project/hwcomponents-neurosim) |
 >
 > 
 > The instructions below are kept for archival and reproducibility only.
